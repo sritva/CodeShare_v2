@@ -1,0 +1,23 @@
+-- CodeShare database schema
+-- Run: mysql -u root -p < schema.sql
+
+CREATE DATABASE IF NOT EXISTS codeshare;
+USE codeshare;
+
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE snippets (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(200) NOT NULL,
+    code TEXT NOT NULL,
+    language VARCHAR(50) NOT NULL DEFAULT 'text',
+    is_public BOOLEAN NOT NULL DEFAULT TRUE,
+    user_id INT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);

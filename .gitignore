@@ -1,0 +1,70 @@
+# Maven
+target/
+maven_tool/
+!.mvn/wrapper/maven-wrapper.jar
+
+# Compiled
+*.class
+*.jar
+*.war
+*.ear
+
+# Logs
+*.log
+logs/
+spring.log
+*.pid
+
+# IntelliJ
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# Eclipse / STS
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache
+bin/
+
+# VS Code
+.vscode/
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Linux
+*~
+
+# Secrets
+*.sql.bak
+*.dump
+application-local.properties
+application-secret.properties
+secrets.properties
+
+# JVM crash logs
+hs_err_pid*
+replay_pid*

@@ -1,0 +1,150 @@
+package com.codeshare.model;
+
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "snippets")
+public class Snippet {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @NotBlank(message = "Title cannot be blank")
+    @Size(max = 200, message = "Title cannot exceed 200 characters")
+    @Column(nullable = false, length = 200)
+    private String title;
+
+    @NotBlank(message = "Code cannot be blank")
+    @Column(columnDefinition = "TEXT", nullable = false)
+    private String code;
+
+    @NotBlank(message = "Language cannot be blank")
+    @Size(max = 50, message = "Language cannot exceed 50 characters")
+    @Column(nullable = false, length = 50)
+    private String language = "text";
+
+    @Column(name = "is_public", nullable = false)
+    private boolean isPublic = true;
+
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @Lob
+    @Column(name = "ai_explanation", columnDefinition = "TEXT")
+    private String aiExplanation;
+
+    public Snippet() {
+    }
+
+    public Snippet(Integer id, String title, String code, String language, boolean isPublic, LocalDateTime createdAt, User user) {
+        this.id = id;
+        this.title = title;
+        this.code = code;
+        this.language = language;
+        this.isPublic = isPublic;
+        this.createdAt = createdAt;
+        this.user = user;
+    }
+
+    @PrePersist
+    protected void onCreate() {
+        if (this.createdAt == null) {
+            this.createdAt = LocalDateTime.now();
+        }
+        if (this.updatedAt == null) {
+            this.updatedAt = LocalDateTime.now();
+        }
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getCode() {
+        return code;
+    }
+
+    public void setCode(String code) {
+        this.code = code;
+    }
+
+    public String getLanguage() {
+        return language;
+    }
+
+    public void setLanguage(String language) {
+        this.language = language;
+    }
+
+    public boolean isPublic() {
+        return isPublic;
+    }
+
+    public void setPublic(boolean isPublic) {
+        this.isPublic = isPublic;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+
+    public String getAiExplanation() {
+        return aiExplanation;
+    }
+
+    public void setAiExplanation(String aiExplanation) {
+        this.aiExplanation = aiExplanation;
+    }
+
+    public String getUsername() {
+        return user != null ? user.getUsername() : "";
+    }
+}

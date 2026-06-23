@@ -1,0 +1,16 @@
+<nav class="navbar">
+    <div class="navbar-inner">
+        <a class="brand" href="<%= request.getContextPath() %>/home">Code<span>Share</span></a>
+        <div class="nav-links">
+            <a href="<%= request.getContextPath() %>/home"
+               class="<%= "home".equals(activeNav) ? "active" : "" %>">All Snippets</a>
+            <a href="<%= request.getContextPath() %>/my-snippets"
+               class="<%= "my-snippets".equals(activeNav) ? "active" : "" %>">My Snippets</a>
+            <a href="<%= request.getContextPath() %>/create-snippet"
+               class="<%= "create".equals(activeNav) ? "active" : "" %>">New Snippet</a>
+            <a href="<%= request.getContextPath() %>/search"
+               class="<%= "search".equals(activeNav) ? "active" : "" %>">Search</a>
+            <a href="<%= request.getContextPath() %>/logout" class="nav-logout">Logout</a>
+        </div>
+    </div>
+</nav>
