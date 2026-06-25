@@ -54,8 +54,21 @@ public class SecurityConfig {
                     "/api/auth/**",
                     "/api/snippets/public",
                     "/api/snippets/search",
-                    "/css/**", "/js/**", "/",
-                    "/index.html", "/assets/**"
+                    "/api/snippets/*/explain",
+                    "/",
+                    "/index.html",
+                    "/assets/**",
+                    "/*.js",
+                    "/*.css",
+                    "/*.ico",
+                    "/home",
+                    "/login",
+                    "/register",
+                    "/my-snippets",
+                    "/create",
+                    "/search",
+                    "/snippet/**",
+                    "/edit/**"
                 ).permitAll()
                 .anyRequest().authenticated()
             )

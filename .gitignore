@@ -68,3 +68,6 @@ secrets.properties
 # JVM crash logs
 hs_err_pid*
 replay_pid*
+
+# Frontend Node/npm downloaded by frontend-maven-plugin
+frontend/node/

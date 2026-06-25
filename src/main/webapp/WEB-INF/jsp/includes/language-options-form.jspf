@@ -1,9 +1,0 @@
-<option value="java"       <%= "java".equals(langSelected)       ? "selected" : "" %>>Java</option>
-<option value="python"     <%= "python".equals(langSelected)     ? "selected" : "" %>>Python</option>
-<option value="javascript" <%= "javascript".equals(langSelected) ? "selected" : "" %>>JavaScript</option>
-<option value="html"       <%= "html".equals(langSelected)       ? "selected" : "" %>>HTML</option>
-<option value="css"        <%= "css".equals(langSelected)        ? "selected" : "" %>>CSS</option>
-<option value="sql"        <%= "sql".equals(langSelected)        ? "selected" : "" %>>SQL</option>
-<option value="c"          <%= "c".equals(langSelected)          ? "selected" : "" %>>C</option>
-<option value="cpp"        <%= "cpp".equals(langSelected)        ? "selected" : "" %>>C++</option>
-<option value="text"       <%= "text".equals(langSelected)       ? "selected" : "" %>>Plain Text</option>

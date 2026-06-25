@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import ReactMarkdown from 'react-markdown'
 import api from '../api'
 
 export default function ViewSnippet() {
@@ -169,9 +170,50 @@ export default function ViewSnippet() {
         )}
 
         {explanation && !explaining && (
-          <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
-            {explanation}
-          </p>
+          <div className="text-gray-300 text-sm leading-relaxed 
+            prose prose-invert prose-sm max-w-none">
+            <ReactMarkdown
+              components={{
+                code: ({node, inline, className, children, ...props}) => (
+                  inline
+                    ? <code className="bg-gray-800 text-indigo-300 px-1.5 
+                        py-0.5 rounded text-xs font-mono" {...props}>
+                        {children}
+                      </code>
+                    : <pre className="bg-gray-800 rounded-lg p-3 
+                        overflow-x-auto my-2">
+                        <code className="text-xs font-mono text-gray-300" 
+                          {...props}>
+                          {children}
+                        </code>
+                      </pre>
+                ),
+                strong: ({children}) => (
+                  <strong className="text-white font-semibold">
+                    {children}
+                  </strong>
+                ),
+                p: ({children}) => (
+                  <div className="mb-2 last:mb-0">{children}</div>
+                ),
+                ul: ({children}) => (
+                  <ul className="list-disc list-inside space-y-1 mb-2">
+                    {children}
+                  </ul>
+                ),
+                ol: ({children}) => (
+                  <ol className="list-decimal list-inside space-y-1 mb-2">
+                    {children}
+                  </ol>
+                ),
+                li: ({children}) => (
+                  <li className="text-gray-300">{children}</li>
+                ),
+              }}
+            >
+              {explanation}
+            </ReactMarkdown>
+          </div>
         )}
 
         {!explanation && !explaining && !explainError && (
