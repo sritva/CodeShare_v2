@@ -62,6 +62,7 @@ $RECYCLE.BIN/
 *.sql.bak
 *.dump
 application-local.properties
+.env
 application-secret.properties
 secrets.properties
 
