@@ -7,6 +7,8 @@ import com.codeshare.service.GeminiClient;
 import com.codeshare.service.RateLimiterService;
 import com.codeshare.service.SnippetService;
 import jakarta.servlet.http.HttpSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +22,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/snippets")
 public class SnippetApiController {
+    private static final Logger log = LoggerFactory.getLogger(SnippetApiController.class);
 
     private final SnippetService snippetService;
     private final UserRepository userRepository;
@@ -203,6 +206,7 @@ public class SnippetApiController {
             snippetService.updateExplanation(id, explanation);
             return ResponseEntity.ok(Map.of("explanation", explanation));
         } catch (Exception e) {
+            log.error("Failed to generate AI explanation for snippet ID {}: {}", id, e.getMessage(), e);
             return ResponseEntity.status(500)
                 .body(Map.of("error", "Failed to generate explanation"));
         }

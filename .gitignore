@@ -72,6 +72,3 @@ replay_pid*
 
 # Frontend Node/npm downloaded by frontend-maven-plugin
 frontend/node/
-
-# Context files
-project_context.md
