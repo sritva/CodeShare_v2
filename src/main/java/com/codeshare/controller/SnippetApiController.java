@@ -6,6 +6,8 @@ import com.codeshare.repository.UserRepository;
 import com.codeshare.service.GeminiClient;
 import com.codeshare.service.RateLimiterService;
 import com.codeshare.service.SnippetService;
+import com.codeshare.dto.SnippetRequest;
+import jakarta.validation.Valid;
 import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,31 +99,16 @@ public class SnippetApiController {
 
     @PostMapping
     public ResponseEntity<?> create(
-            @RequestBody Map<String, Object> body,
+            @Valid @RequestBody SnippetRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
         User user = getCurrentUser(userDetails);
         if (user == null) return ResponseEntity.status(401).build();
 
-        String title = (String) body.get("title");
-        String code = (String) body.get("code");
-        String language = (String) body.get("language");
-        boolean isPublic = body.get("isPublic") == null 
-            || (boolean) body.get("isPublic");
-
-        if (title == null || title.trim().isEmpty()) {
-            return ResponseEntity.badRequest()
-                .body(Map.of("error", "Title cannot be blank"));
-        }
-        if (code == null || code.trim().isEmpty()) {
-            return ResponseEntity.badRequest()
-                .body(Map.of("error", "Code cannot be blank"));
-        }
-
         Snippet snippet = new Snippet();
-        snippet.setTitle(title);
-        snippet.setCode(code);
-        snippet.setLanguage(language != null ? language : "text");
-        snippet.setPublic(isPublic);
+        snippet.setTitle(request.getTitle());
+        snippet.setCode(request.getCode());
+        snippet.setLanguage(request.getLanguage() != null ? request.getLanguage() : "text");
+        snippet.setPublic(request.isPublic());
 
         Snippet saved = snippetService.create(snippet, user);
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
@@ -130,22 +117,16 @@ public class SnippetApiController {
     @PutMapping("/{id}")
     public ResponseEntity<?> update(
             @PathVariable Integer id,
-            @RequestBody Map<String, Object> body,
+            @Valid @RequestBody SnippetRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
         User user = getCurrentUser(userDetails);
         if (user == null) return ResponseEntity.status(401).build();
 
-        String title = (String) body.get("title");
-        String code = (String) body.get("code");
-        String language = (String) body.get("language");
-        boolean isPublic = body.get("isPublic") == null 
-            || (boolean) body.get("isPublic");
-
         Snippet details = new Snippet();
-        details.setTitle(title);
-        details.setCode(code);
-        details.setLanguage(language != null ? language : "text");
-        details.setPublic(isPublic);
+        details.setTitle(request.getTitle());
+        details.setCode(request.getCode());
+        details.setLanguage(request.getLanguage() != null ? request.getLanguage() : "text");
+        details.setPublic(request.isPublic());
 
         try {
             snippetService.update(id, details, user);

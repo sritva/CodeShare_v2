@@ -74,6 +74,18 @@ export default function ViewSnippet() {
     }
   }
 
+  const handleDelete = async () => {
+    if (!window.confirm('Are you sure you want to delete this snippet?')) {
+      return
+    }
+    try {
+      await api.delete(`/snippets/${id}`)
+      navigate('/my-snippets')
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to delete snippet')
+    }
+  }
+
   const handleUnshare = async () => {
     setShareLoading(true)
     try {
@@ -150,6 +162,12 @@ export default function ViewSnippet() {
                 text-gray-300 px-3 py-1.5 rounded-lg transition-colors">
               Edit
             </Link>
+            <button
+              onClick={handleDelete}
+              className="text-sm bg-red-950/40 hover:bg-red-900/60 
+                text-red-400 border border-red-800/60 px-3 py-1.5 rounded-lg transition-colors">
+              Delete
+            </button>
           </div>
         )}
       </div>

@@ -8,6 +8,11 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import java.util.Map;
 
 import java.util.NoSuchElementException;
 
@@ -41,6 +46,16 @@ public class GlobalExceptionHandler {
         }
         model.addAttribute("message", "Something went wrong. Please try again.");
         return "error/500";
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    @ResponseBody
+    public ResponseEntity<?> handleValidationExceptions(MethodArgumentNotValidException ex) {
+        String errorMessage = ex.getBindingResult().getFieldErrors().stream()
+                .map(org.springframework.validation.FieldError::getDefaultMessage)
+                .findFirst()
+                .orElse("Validation failed");
+        return ResponseEntity.badRequest().body(Map.of("error", errorMessage));
     }
 
     @ExceptionHandler(Exception.class)
