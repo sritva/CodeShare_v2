@@ -207,4 +207,60 @@ public class SnippetApiController {
                 .body(Map.of("error", "Failed to generate explanation"));
         }
     }
+
+    @PostMapping("/{id}/share")
+    public ResponseEntity<?> enableSharing(
+            @PathVariable Integer id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        User user = getCurrentUser(userDetails);
+        if (user == null) return ResponseEntity.status(401).build();
+
+        try {
+            Snippet snippet = snippetService.enableSharing(id, user);
+            return ResponseEntity.ok(Map.of(
+                "shareToken", snippet.getShareToken(),
+                "shareEnabled", snippet.isShareEnabled()
+            ));
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(403)
+                .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{id}/unshare")
+    public ResponseEntity<?> disableSharing(
+            @PathVariable Integer id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        User user = getCurrentUser(userDetails);
+        if (user == null) return ResponseEntity.status(401).build();
+
+        try {
+            snippetService.disableSharing(id, user);
+            return ResponseEntity.ok(
+                Map.of("message", "Sharing disabled"));
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(403)
+                .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/shared/{token}")
+    public ResponseEntity<?> getSharedSnippet(
+            @PathVariable String token) {
+        try {
+            Snippet snippet = snippetService.getByShareToken(token);
+            return ResponseEntity.ok(new com.codeshare.dto.SharedSnippetResponse(
+                snippet.getTitle(),
+                snippet.getCode(),
+                snippet.getLanguage(),
+                snippet.getUsername(),
+                snippet.getCreatedAt(),
+                snippet.getUpdatedAt(),
+                snippet.getAiExplanation()
+            ));
+        } catch (org.springframework.web.server.ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode())
+                .body(Map.of("error", e.getReason()));
+        }
+    }
 }

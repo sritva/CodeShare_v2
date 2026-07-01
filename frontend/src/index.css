@@ -1,3 +1,179 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Light mode overrides: Active when .dark class is NOT present on html */
+html:not(.dark) {
+  color-scheme: light;
+}
+
+html:not(.dark) .min-h-screen {
+  background-color: #f6f8fa !important;
+  color: #24292f !important;
+}
+
+html:not(.dark) body {
+  background-color: #f6f8fa !important;
+  color: #24292f !important;
+}
+
+html:not(.dark) .bg-gray-950 {
+  background-color: #f6f8fa !important;
+}
+
+html:not(.dark) .bg-gray-900 {
+  background-color: #ffffff !important;
+}
+
+html:not(.dark) .bg-gray-800 {
+  background-color: #afb8c133 !important;
+}
+
+html:not(.dark) .text-gray-100 {
+  color: #24292f !important;
+}
+
+html:not(.dark) .text-gray-300 {
+  color: #24292f !important;
+}
+
+html:not(.dark) .text-gray-400 {
+  color: #57606a !important;
+}
+
+html:not(.dark) .text-gray-500 {
+  color: #57606a !important;
+}
+
+html:not(.dark) .text-gray-600 {
+  color: #6e7781 !important;
+}
+
+html:not(.dark) .border-gray-700 {
+  border-color: #d0d7de !important;
+}
+
+/* text-white must become dark in light mode */
+html:not(.dark) .text-white {
+  color: #24292f !important;
+}
+
+/* Navbar background in light mode */
+html:not(.dark) nav.bg-gray-900 {
+  background-color: #ffffff !important;
+  border-bottom-color: #d0d7de !important;
+}
+
+/* Snippet card hover border in light mode */
+html:not(.dark) .hover\:border-indigo-500:hover {
+  border-color: #0969da !important;
+}
+
+/* group-hover text color fix in light mode */
+html:not(.dark) .group:hover .group-hover\:text-indigo-400 {
+  color: #0969da !important;
+}
+
+/* Accents & Buttons */
+html:not(.dark) .text-indigo-400,
+html:not(.dark) .text-indigo-300 {
+  color: #0969da !important;
+}
+
+html:not(.dark) .bg-indigo-600 {
+  background-color: #0969da !important;
+  color: #ffffff !important;
+}
+
+html:not(.dark) .hover\:bg-indigo-500:hover {
+  background-color: #0c57d0 !important;
+}
+
+/* Form inputs */
+html:not(.dark) input,
+html:not(.dark) textarea,
+html:not(.dark) select,
+html:not(.dark) .form-control {
+  background-color: #ffffff !important;
+  color: #24292f !important;
+  border-color: #d0d7de !important;
+}
+
+html:not(.dark) input::placeholder,
+html:not(.dark) textarea::placeholder {
+  color: #8c959f !important;
+}
+
+/* Markdown prose overrides */
+html:not(.dark) .prose-invert {
+  --tw-prose-body: #24292f;
+  --tw-prose-headings: #24292f;
+  --tw-prose-lead: #57606a;
+  --tw-prose-links: #0969da;
+  --tw-prose-bold: #24292f;
+  --tw-prose-counters: #57606a;
+  --tw-prose-bullets: #8c959f;
+  --tw-prose-hr: #d0d7de;
+  --tw-prose-quotes: #24292f;
+  --tw-prose-quote-borders: #d0d7de;
+  --tw-prose-captions: #57606a;
+  --tw-prose-code: #24292f;
+  --tw-prose-pre-code: #24292f;
+  --tw-prose-pre-bg: #afb8c133;
+  --tw-prose-th-borders: #d0d7de;
+  --tw-prose-td-borders: #d0d7de;
+}
+
+/* CodeMirror theme translation to light theme */
+html:not(.dark) .CodeMirror {
+  background: #ffffff !important;
+  color: #24292f !important;
+  border: 1px solid #d0d7de !important;
+  border-radius: 8px;
+}
+html:not(.dark) .CodeMirror-gutters {
+  background: #f6f8fa !important;
+  border-right: 1px solid #d0d7de !important;
+  color: #57606a !important;
+}
+html:not(.dark) .CodeMirror-cursor {
+  border-left: 1.5px solid #24292f !important;
+}
+html:not(.dark) .CodeMirror-selected {
+  background: #add6ff !important;
+}
+html:not(.dark) .cm-s-material-darker .cm-keyword { color: #cf222e !important; font-weight: bold; }
+html:not(.dark) .cm-s-material-darker .cm-string { color: #0a3069 !important; }
+html:not(.dark) .cm-s-material-darker .cm-comment { color: #6e7781 !important; font-style: italic; }
+html:not(.dark) .cm-s-material-darker .cm-number { color: #0550ae !important; }
+html:not(.dark) .cm-s-material-darker .cm-variable { color: #24292f !important; }
+html:not(.dark) .cm-s-material-darker .cm-def { color: #953800 !important; }
+html:not(.dark) .cm-s-material-darker .cm-operator { color: #cf222e !important; }
+html:not(.dark) .cm-s-material-darker .cm-type { color: #953800 !important; }
+html:not(.dark) .cm-s-material-darker .cm-property { color: #0550ae !important; }
+html:not(.dark) .cm-s-material-darker .cm-meta { color: #57606a !important; }
+html:not(.dark) .cm-s-material-darker .cm-atom { color: #0550ae !important; }
+html:not(.dark) .cm-s-material-darker .cm-qualifier { color: #953800 !important; }
+html:not(.dark) .cm-s-material-darker .cm-builtin { color: #953800 !important; }
+
+/* Toggle Button Styling */
+.theme-toggle-btn {
+  padding: 6px;
+  border-radius: 50%;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+html.dark .theme-toggle-btn:hover {
+  background-color: #1f2937 !important; /* gray-800 hover */
+  border-color: #374151 !important;     /* gray-700 border */
+  transform: rotate(15deg);
+}
+html:not(.dark) .theme-toggle-btn:hover {
+  background-color: #e1e4e8 !important; /* light gray hover */
+  border-color: #d0d7de !important;     /* light border */
+  transform: rotate(15deg);
+}

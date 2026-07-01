@@ -26,7 +26,6 @@ public class DatabaseSeeder implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         if (userRepository.count() == 0) {
-            // Seed Users
             User alice = new User();
             alice.setUsername("alice");
             alice.setPasswordHash(passwordEncoder.encode("password123"));
@@ -47,9 +46,6 @@ public class DatabaseSeeder implements CommandLineRunner {
             michael.setPasswordHash(passwordEncoder.encode("password123"));
             michael = userRepository.save(michael);
 
-            // Seed Snippets
-
-            // --- Alice's snippets ---
             Snippet s1 = new Snippet();
             s1.setTitle("Binary Search");
             s1.setCode(
@@ -104,7 +100,6 @@ public class DatabaseSeeder implements CommandLineRunner {
             s3.setUser(alice);
             snippetRepository.save(s3);
 
-            // --- Bob's snippets ---
             Snippet s4 = new Snippet();
             s4.setTitle("Reverse a Linked List");
             s4.setCode(
@@ -144,7 +139,6 @@ public class DatabaseSeeder implements CommandLineRunner {
             s5.setUser(bob);
             snippetRepository.save(s5);
 
-            // --- Charlie's snippets ---
             Snippet s6 = new Snippet();
             s6.setTitle("Merge Sort");
             s6.setCode(
@@ -215,7 +209,6 @@ public class DatabaseSeeder implements CommandLineRunner {
             s8.setUser(charlie);
             snippetRepository.save(s8);
 
-            // --- Michael's snippets ---
             Snippet s9 = new Snippet();
             s9.setTitle("Longest Common Subsequence");
             s9.setCode(

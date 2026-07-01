@@ -44,6 +44,15 @@ public class Snippet {
     @Column(name = "ai_explanation", columnDefinition = "TEXT")
     private String aiExplanation;
 
+    @Column(name = "share_token", unique = true, length = 36)
+    private String shareToken;
+
+    @Column(name = "share_enabled", nullable = false)
+    private boolean shareEnabled = false;
+
+    @Column(name = "shared_at")
+    private LocalDateTime sharedAt;
+
     public Snippet() {
     }
 
@@ -146,5 +155,29 @@ public class Snippet {
 
     public String getUsername() {
         return user != null ? user.getUsername() : "";
+    }
+
+    public String getShareToken() {
+        return shareToken;
+    }
+
+    public void setShareToken(String shareToken) {
+        this.shareToken = shareToken;
+    }
+
+    public boolean isShareEnabled() {
+        return shareEnabled;
+    }
+
+    public void setShareEnabled(boolean shareEnabled) {
+        this.shareEnabled = shareEnabled;
+    }
+
+    public LocalDateTime getSharedAt() {
+        return sharedAt;
+    }
+
+    public void setSharedAt(LocalDateTime sharedAt) {
+        this.sharedAt = sharedAt;
     }
 }

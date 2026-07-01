@@ -55,6 +55,7 @@ public class SecurityConfig {
                     "/api/snippets/public",
                     "/api/snippets/search",
                     "/api/snippets/*/explain",
+                    "/api/snippets/shared/**",
                     "/",
                     "/index.html",
                     "/assets/**",
@@ -68,7 +69,8 @@ public class SecurityConfig {
                     "/create",
                     "/search",
                     "/snippet/**",
-                    "/edit/**"
+                    "/edit/**",
+                    "/share/**"
                 ).permitAll()
                 .anyRequest().authenticated()
             )

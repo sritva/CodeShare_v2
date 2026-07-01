@@ -105,7 +105,6 @@ public class SnippetService {
         log.info("Snippet deleted - id: {}, user: {}", id, currentUser.getUsername());
         Snippet existing = getById(id);
         
-        // Ownership check
         if (!existing.getUser().getId().equals(currentUser.getId())) {
             log.warn("Unauthorized access attempt - snippet: {}, user: {}", id, currentUser.getUsername());
             throw new AccessDeniedException("Unauthorized access to delete snippet");
@@ -150,5 +149,55 @@ public class SnippetService {
         Snippet existing = getById(id);
         existing.setAiExplanation(aiExplanation);
         return snippetRepository.save(existing);
+    }
+
+    @Transactional
+    public Snippet enableSharing(Integer id, User requestingUser) {
+        Snippet snippet = getById(id);
+
+        if (!snippet.isPublic()) {
+            if (!snippet.getUser().getId().equals(requestingUser.getId())) {
+                throw new AccessDeniedException(
+                    "Only the owner can share a private snippet");
+            }
+        }
+
+        if (snippet.getShareToken() == null) {
+            snippet.setShareToken(java.util.UUID.randomUUID().toString());
+        }
+        snippet.setShareEnabled(true);
+        snippet.setSharedAt(java.time.LocalDateTime.now());
+
+        log.info("Sharing enabled for snippet {} by user {}",
+            id, requestingUser.getUsername());
+        return snippetRepository.save(snippet);
+    }
+
+    @Transactional
+    public Snippet disableSharing(Integer id, User requestingUser) {
+        Snippet snippet = getById(id);
+
+        // Only owner can disable sharing
+        if (!snippet.getUser().getId().equals(requestingUser.getId())) {
+            throw new AccessDeniedException(
+                "Only the owner can disable sharing");
+        }
+
+        snippet.setShareEnabled(false);
+        log.info("Sharing disabled for snippet {} by user {}",
+            id, requestingUser.getUsername());
+        return snippetRepository.save(snippet);
+    }
+
+    public Snippet getByShareToken(String token) {
+        Snippet snippet = snippetRepository.findByShareToken(token)
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.NOT_FOUND, "Share link not found"));
+
+        if (!snippet.isShareEnabled()) {
+            throw new ResponseStatusException(
+                HttpStatus.GONE, "This share link has been disabled");
+        }
+        return snippet;
     }
 }

@@ -9,7 +9,7 @@ public class SpaController {
     @RequestMapping(value = {
         "/", "/home", "/login", "/register",
         "/my-snippets", "/create", "/search",
-        "/snippet/**", "/edit/**"
+        "/snippet/**", "/edit/**", "/share/**"
     })
     public String forward() {
         return "forward:/index.html";

@@ -39,6 +39,12 @@ function SnippetRow({ snippet, onDelete }) {
               : 'bg-gray-800 text-gray-500'}`}>
             {snippet.public ? 'Public' : 'Private'}
           </span>
+          {snippet.shareEnabled && (
+            <span className="shrink-0 text-xs px-2 py-0.5 rounded 
+              bg-indigo-900/40 text-indigo-400">
+              Shared
+            </span>
+          )}
         </div>
         <p className="text-xs text-gray-500">
           {new Date(snippet.createdAt).toLocaleDateString()}

@@ -2,6 +2,7 @@ FROM eclipse-temurin:17-jdk-alpine AS builder
 WORKDIR /app
 RUN apk add --no-cache nodejs npm maven
 COPY pom.xml ./
+RUN mvn dependency:go-offline
 COPY src/ src/
 COPY frontend/ frontend/
 RUN mvn clean package -DskipTests --no-transfer-progress

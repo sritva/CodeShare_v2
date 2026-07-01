@@ -26,7 +26,6 @@ public class GeminiClient {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public String generateExplanation(String code, String language) throws Exception {
-        // Resolve API key from environment variable if properties file did not specify it
         String resolvedKey = apiKey;
         if (resolvedKey == null || resolvedKey.trim().isEmpty()) {
             resolvedKey = System.getenv("GEMINI_API_KEY");
@@ -44,7 +43,6 @@ public class GeminiClient {
                 "Format your explanation in clean, professional markdown. Here is the code:\n\n" +
                 code;
 
-        // Construct JSON Request using Jackson Node API (safe from injection/escaping issues)
         ObjectNode rootNode = objectMapper.createObjectNode();
         ArrayNode contentsArray = rootNode.putArray("contents");
         ObjectNode contentObject = contentsArray.addObject();

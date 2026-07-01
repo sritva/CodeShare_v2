@@ -15,6 +15,11 @@ export default function ViewSnippet() {
   const [explaining, setExplaining] = useState(false)
   const [explainError, setExplainError] = useState('')
   const [copied, setCopied] = useState(false)
+  const [shareToken, setShareToken] = useState(null)
+  const [shareEnabled, setShareEnabled] = useState(false)
+  const [shareLoading, setShareLoading] = useState(false)
+  const [shareCopied, setShareCopied] = useState(false)
+  const [shareError, setShareError] = useState('')
 
   useEffect(() => {
     api.get(`/snippets/${id}`)
@@ -22,6 +27,10 @@ export default function ViewSnippet() {
         setSnippet(res.data)
         if (res.data.aiExplanation) {
           setExplanation(res.data.aiExplanation)
+        }
+        if (res.data.shareToken && res.data.shareEnabled) {
+          setShareToken(res.data.shareToken)
+          setShareEnabled(res.data.shareEnabled)
         }
       })
       .catch(() => setError('Snippet not found or access denied'))
@@ -47,6 +56,41 @@ export default function ViewSnippet() {
     navigator.clipboard.writeText(snippet.code)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleShare = async () => {
+    setShareLoading(true)
+    setShareError('')
+    try {
+      const res = await api.post(`/snippets/${id}/share`)
+      setShareToken(res.data.shareToken)
+      setShareEnabled(true)
+    } catch (err) {
+      setShareError(
+        err.response?.data?.error || 'Failed to generate share link'
+      )
+    } finally {
+      setShareLoading(false)
+    }
+  }
+
+  const handleUnshare = async () => {
+    setShareLoading(true)
+    try {
+      await api.post(`/snippets/${id}/unshare`)
+      setShareEnabled(false)
+    } catch (err) {
+      setShareError('Failed to disable sharing')
+    } finally {
+      setShareLoading(false)
+    }
+  }
+
+  const handleCopyShareLink = () => {
+    const url = `${window.location.origin}/share/snippet/${shareToken}`
+    navigator.clipboard.writeText(url)
+    setShareCopied(true)
+    setTimeout(() => setShareCopied(false), 2000)
   }
 
   const isOwner = isLoggedIn && snippet?.username === username
@@ -131,6 +175,64 @@ export default function ViewSnippet() {
         </pre>
       </div>
 
+      {/* Share section */}
+      {isLoggedIn && (snippet?.public || isOwner) && (
+        <div className="bg-gray-900 border border-gray-700 
+          rounded-xl p-5 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-medium text-gray-300">
+              Share Snippet
+            </h2>
+            {!shareEnabled ? (
+              <button
+                onClick={handleShare}
+                disabled={shareLoading}
+                className="text-xs bg-gray-700 hover:bg-gray-600 
+                  disabled:opacity-50 text-white px-3 py-1.5 
+                  rounded-lg transition-colors">
+                {shareLoading ? 'Generating...' : 'Generate share link'}
+              </button>
+            ) : (
+              <button
+                onClick={handleUnshare}
+                disabled={shareLoading}
+                className="text-xs bg-red-900/30 hover:bg-red-900/50 
+                  disabled:opacity-50 text-red-400 px-3 py-1.5 
+                  rounded-lg transition-colors">
+                {shareLoading ? 'Disabling...' : 'Disable sharing'}
+              </button>
+            )}
+          </div>
+
+          {shareError && (
+            <p className="text-red-400 text-xs mb-2">{shareError}</p>
+          )}
+
+          {shareEnabled && shareToken && (
+            <div className="flex items-center gap-2">
+              <code className="flex-1 bg-gray-800 text-gray-300 text-xs 
+                px-3 py-2 rounded-lg truncate font-mono">
+                {`${window.location.origin}/share/snippet/${shareToken}`}
+              </code>
+              <button
+                onClick={handleCopyShareLink}
+                className="shrink-0 text-xs bg-indigo-600 
+                  hover:bg-indigo-500 text-white px-3 py-2 
+                  rounded-lg transition-colors">
+                {shareCopied ? '✓ Copied' : 'Copy'}
+              </button>
+            </div>
+          )}
+
+          {!shareEnabled && !shareToken && (
+            <p className="text-gray-600 text-xs">
+              Generate a link to share this snippet with anyone,
+              even without an account.
+            </p>
+          )}
+        </div>
+      )}
+
       {/* AI Explanation */}
       <div className="bg-gray-900 border border-gray-700 rounded-xl p-5">
         <div className="flex items-center justify-between mb-3">
@@ -174,20 +276,20 @@ export default function ViewSnippet() {
             prose prose-invert prose-sm max-w-none">
             <ReactMarkdown
               components={{
-                code: ({node, inline, className, children, ...props}) => (
-                  inline
-                    ? <code className="bg-gray-800 text-indigo-300 px-1.5 
-                        py-0.5 rounded text-xs font-mono" {...props}>
+                code: ({node, className, children, ...props}) => {
+                  const match = /language-(\w+)/.exec(className || '')
+                  return !match ? (
+                    <code className="bg-gray-800 text-indigo-300 px-1.5 py-0.5 rounded text-xs font-mono" {...props}>
+                      {children}
+                    </code>
+                  ) : (
+                    <pre className="bg-gray-800 rounded-lg p-3 overflow-x-auto my-2">
+                      <code className={`${className} text-xs font-mono text-gray-300`} {...props}>
                         {children}
                       </code>
-                    : <pre className="bg-gray-800 rounded-lg p-3 
-                        overflow-x-auto my-2">
-                        <code className="text-xs font-mono text-gray-300" 
-                          {...props}>
-                          {children}
-                        </code>
-                      </pre>
-                ),
+                    </pre>
+                  )
+                },
                 strong: ({children}) => (
                   <strong className="text-white font-semibold">
                     {children}

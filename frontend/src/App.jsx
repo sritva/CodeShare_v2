@@ -9,6 +9,7 @@ import MySnippets from './pages/MySnippets'
 import CreateSnippet from './pages/CreateSnippet'
 import EditSnippet from './pages/EditSnippet'
 import ViewSnippet from './pages/ViewSnippet'
+import SharedSnippetView from './pages/SharedSnippetView'
 import Search from './pages/Search'
 
 export default function App() {
@@ -24,6 +25,7 @@ export default function App() {
             <Route path="/home" element={<Home />} />
             <Route path="/search" element={<Search />} />
             <Route path="/snippet/:id" element={<ViewSnippet />} />
+            <Route path="/share/snippet/:token" element={<SharedSnippetView />} />
             <Route path="/my-snippets" element={
               <PrivateRoute><MySnippets /></PrivateRoute>
             } />
