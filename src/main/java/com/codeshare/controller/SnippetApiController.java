@@ -8,7 +8,6 @@ import com.codeshare.service.RateLimiterService;
 import com.codeshare.service.SnippetService;
 import com.codeshare.dto.SnippetRequest;
 import jakarta.validation.Valid;
-import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -157,8 +156,7 @@ public class SnippetApiController {
     @PostMapping("/{id}/explain")
     public ResponseEntity<?> explain(
             @PathVariable Integer id,
-            @AuthenticationPrincipal UserDetails userDetails,
-            HttpSession session) {
+            @AuthenticationPrincipal UserDetails userDetails) {
         User user = getCurrentUser(userDetails);
         if (user == null) return ResponseEntity.status(401).build();
 
@@ -175,7 +173,7 @@ public class SnippetApiController {
                 Map.of("explanation", snippet.getAiExplanation()));
         }
 
-        if (!rateLimiterService.allowRequest(session.getId())) {
+        if (!rateLimiterService.allowRequest((long) user.getId())) {
             return ResponseEntity.status(429)
                 .body(Map.of("error", 
                     "Rate limit exceeded. Max 5 requests per minute."));

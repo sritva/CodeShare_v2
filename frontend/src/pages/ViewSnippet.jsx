@@ -138,11 +138,11 @@ export default function ViewSnippet() {
           </h1>
           <div className="flex items-center gap-3 text-sm text-gray-400">
             <span>by {snippet.username}</span>
-            <span>·</span>
+            <span>{"\u00B7"}</span>
             <span className="font-mono bg-gray-800 px-2 py-0.5 rounded">
               {snippet.language}
             </span>
-            <span>·</span>
+            <span>{"\u00B7"}</span>
             <span>
               {new Date(snippet.createdAt).toLocaleDateString()}
             </span>
@@ -349,7 +349,7 @@ export default function ViewSnippet() {
         <Link to="/home"
           className="text-sm text-gray-500 hover:text-gray-300 
             transition-colors">
-          ← Back to snippets
+          {"\u2190"} Back to snippets
         </Link>
       </div>
     </div>

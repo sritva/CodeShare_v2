@@ -1,5 +1,14 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import CodeMirror from 'codemirror'
+import 'codemirror/lib/codemirror.css'
+import 'codemirror/theme/material-darker.css'
+import 'codemirror/mode/clike/clike'
+import 'codemirror/mode/python/python'
+import 'codemirror/mode/javascript/javascript'
+import 'codemirror/mode/xml/xml'
+import 'codemirror/mode/css/css'
+import 'codemirror/mode/sql/sql'
 import api from '../api'
 
 const LANGUAGES = [
@@ -30,46 +39,15 @@ export default function CreateSnippet() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (!window.CodeMirror && !document.getElementById('codemirror-js')) {
-      const link1 = document.createElement('link')
-      link1.rel = 'stylesheet'
-      link1.href = 'https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/codemirror.min.css'
-      document.head.appendChild(link1)
-
-      const link2 = document.createElement('link')
-      link2.rel = 'stylesheet'
-      link2.href = 'https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/theme/material-darker.min.css'
-      document.head.appendChild(link2)
-
-      const script1 = document.createElement('script')
-      script1.id = 'codemirror-js'
-      script1.src = 'https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/codemirror.min.js'
-      script1.async = true
-      script1.onload = () => {
-        const modes = ['clike', 'python', 'javascript', 'xml', 'css', 'sql']
-        modes.forEach(mode => {
-          const script = document.createElement('script')
-          script.src = `https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/mode/${mode}/${mode}.min.js`
-          script.async = true
-          document.head.appendChild(script)
-        })
-      }
-      document.head.appendChild(script1)
+    if (editorRef.current && !cmRef.current) {
+      cmRef.current = CodeMirror.fromTextArea(editorRef.current, {
+        theme: 'material-darker',
+        lineNumbers: true,
+        indentUnit: 4,
+        lineWrapping: true,
+      })
+      cmRef.current.setSize(null, 400)
     }
-
-    const interval = setInterval(() => {
-      if (window.CodeMirror && editorRef.current && !cmRef.current) {
-        cmRef.current = window.CodeMirror.fromTextArea(editorRef.current, {
-          theme: 'material-darker',
-          lineNumbers: true,
-          indentUnit: 4,
-          lineWrapping: true,
-        })
-        cmRef.current.setSize(null, 400)
-        clearInterval(interval)
-      }
-    }, 100)
-    return () => clearInterval(interval)
   }, [])
 
   const handleChange = e => {

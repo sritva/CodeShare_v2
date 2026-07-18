@@ -1,65 +1,101 @@
 # CodeShare
 
-A code snippet sharing platform built with Spring Boot 3, JSP, and H2 or MySQL. Users can register, log in, create public or private code snippets, browse community snippets, and search by title or language.
+A full-stack platform for sharing and discovering code snippets. Built with Spring Boot 3 and React.
 
 ## Features
 
-- **User Authentication**: Secure registration and login (BCrypt passwords).
-- **Snippet Management**: Create, view, edit, and delete code snippets with public/private visibility.
-- **Snippet Ownership**: Strict ownership enforcement—only creators can edit or delete their snippets.
-- **Single Active Session**: Ensures one active session per user.
-- **Advanced Search**: Search snippets by title and/or language.
-- **Interactive Code Editor**: Integrated CodeMirror in the creation/editing forms for full code editing capabilities (line numbers, auto-matching brackets).
+- **Authentication** — Register and log in with JWT-based stateless auth. Passwords hashed with BCrypt.
+- **Snippet Management** — Create, edit, and delete snippets with public/private visibility. Ownership enforced server-side.
+- **Community Feed** — Paginated list of all public snippets, newest first.
+- **Search** — Filter by title keyword and/or language.
+- **AI Code Explanation** — Powered by Google Gemini. Cached per snippet, rate limited per session.
+- **Shareable Links** — Generate a token-based link for any snippet. Viewable without an account.
+- **Docker** — Full stack with a single `docker-compose up`.
 
 ## Tech Stack
 
 | Layer | Technology |
 |---|---|
 | Backend | Java 17, Spring Boot 3.2.5 |
-| Security | Spring Security 6, BCrypt |
-| Persistence | Spring Data JPA, Hibernate, MySQL |
-| Views | JSP (server-side rendered), JSTL |
-| Build | Maven |
+| Security | Spring Security 6, JWT (jjwt 0.12.3), BCrypt |
+| Persistence | Spring Data JPA, Hibernate |
+| Database | MySQL 8 (H2 in-memory for local dev) |
+| Frontend | React 19, Vite, Tailwind CSS 3, CodeMirror 5 |
+| AI | Google Gemini API |
+| Build | Maven 3.9, frontend-maven-plugin |
+| Tests | JUnit 5, Mockito |
 
-## Database Setup
+## Running Locally
 
-By default, the application runs on a zero-setup **in-memory H2 database** (resetting on restart). 
+### H2 In-Memory (no setup required)
 
-* To inspect H2 database tables, visit **http://localhost:8080/h2-console** (JDBC URL: `jdbc:h2:mem:codeshare`, username: `sa`, password: empty).
-
-If you want persistent storage, you can run the app with **MySQL**:
-1. Create a database in MySQL: `CREATE DATABASE codeshare;`
-2. Update your credentials in `src/main/resources/application-mysql.properties`.
-
-## Running Tests
-
-```powershell
-.\mvn.bat test
+```bash
+mvn spring-boot:run
 ```
 
-Runs 13 unit tests covering `AuthService` and `SnippetService` (validation, ownership, CRUD).
+Open **http://localhost:8080**
 
----
+### MySQL (persistent data)
 
-## How to Run
+1. Create the database:
+   ```sql
+   CREATE DATABASE codeshare;
+   ```
 
-Run the following command from the project root:
+2. Set environment variables:
+   ```bash
+   export SPRING_DATASOURCE_USERNAME=root
+   export SPRING_DATASOURCE_PASSWORD=yourpassword
+   export JWT_SECRET=a-long-random-secret-string
+   ```
 
-* **Using H2 (Default):**
-  ```powershell
-  .\mvn.bat spring-boot:run
-  ```
+3. Run with the MySQL profile:
+   ```bash
+   mvn spring-boot:run -Dspring-boot.run.profiles=mysql
+   ```
 
-* **Using MySQL:**
-  ```powershell
-  .\mvn.bat spring-boot:run "-Dspring-boot.run.profiles=mysql"
-  ```
+### Frontend Dev Server
 
-Once started, open **http://localhost:8080** in your browser.
+```bash
+# Terminal 1 — backend
+mvn spring-boot:run -Dspring-boot.run.profiles=mysql
 
-## Sample Credentials
+# Terminal 2 — frontend
+cd frontend
+npm install
+npm run dev
+```
 
-The application is seeded with the following test accounts:
+Open **http://localhost:5173**
+
+### Tests
+
+```bash
+mvn test
+```
+
+## Docker
+
+```bash
+cp .env.example .env
+docker-compose up --build
+```
+
+Open **http://localhost:8080**
+
+## Environment Variables
+
+| Variable | Required | Description |
+|---|---|---|
+| `JWT_SECRET` | Yes | Secret for signing JWTs. Min 32 characters. |
+| `GEMINI_API_KEY` | No | Google Gemini key. AI features disabled if not set. |
+| `SPRING_DATASOURCE_URL` | MySQL only | JDBC connection URL |
+| `SPRING_DATASOURCE_USERNAME` | MySQL only | Database username |
+| `SPRING_DATASOURCE_PASSWORD` | MySQL only | Database password |
+
+## Demo Accounts
+
+Seeded automatically on first run.
 
 | Username | Password |
 |---|---|
@@ -68,41 +104,45 @@ The application is seeded with the following test accounts:
 | `charlie` | `password123` |
 | `michael` | `password123` |
 
+## API Endpoints
+
+### Auth
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| POST | `/api/auth/register` | No | Register |
+| POST | `/api/auth/login` | No | Login — returns `{ token, username }` |
+| GET | `/api/auth/me` | JWT | Current user |
+
+### Snippets
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/snippets/public?page=0` | No | Public feed |
+| GET | `/api/snippets/search?keyword=&language=&page=0` | No | Search |
+| GET | `/api/snippets/mine` | JWT | Your snippets |
+| GET | `/api/snippets/{id}` | Optional | View snippet |
+| POST | `/api/snippets` | JWT | Create |
+| PUT | `/api/snippets/{id}` | JWT | Update (owner only) |
+| DELETE | `/api/snippets/{id}` | JWT | Delete (owner only) |
+| POST | `/api/snippets/{id}/explain` | JWT | AI explanation |
+| POST | `/api/snippets/{id}/share` | JWT | Enable share link |
+| POST | `/api/snippets/{id}/unshare` | JWT | Disable share link |
+| GET | `/api/snippets/shared/{token}` | No | View via share token |
+
 ## Project Structure
 
 ```
-src/
-├── main/
-│   ├── java/com/codeshare/
-│   │   ├── controller/       # AuthController, SnippetController
-│   │   ├── model/            # User, Snippet entities
-│   │   ├── repository/       # Spring Data JPA repositories
-│   │   ├── security/         # SecurityConfig, UserDetailsService, SessionFilter
-│   │   ├── service/          # AuthService, SnippetService
-│   │   └── util/             # PasswordUtil, DatabaseSeeder
-│   ├── resources/
-│   │   ├── application.properties
-│   │   ├── application-mysql.properties
-│   │   └── static/css/style.css
-│   └── webapp/WEB-INF/jsp/   # JSP views
-└── test/java/com/codeshare/
-    └── service/              # AuthServiceTest, SnippetServiceTest
+src/main/java/com/codeshare/
+├── controller/     # AuthApiController, SnippetApiController, SpaController
+├── model/          # User, Snippet
+├── repository/     # UserRepository, SnippetRepository
+├── security/       # SecurityConfig, JwtUtil, JwtAuthFilter
+├── service/        # AuthService, SnippetService, GeminiClient
+└── util/           # DatabaseSeeder
+
+frontend/src/
+├── api.js
+├── context/AuthContext.jsx
+├── components/     # Navbar, PrivateRoute
+└── pages/          # Home, ViewSnippet, CreateSnippet, EditSnippet,
+                    # MySnippets, Search, SharedSnippetView, Login, Register
 ```
-
-## Routes
-
-| Method | Path | Description |
-|---|---|---|
-| GET | `/login` | Login page |
-| GET | `/register` | Register page |
-| POST | `/register` | Submit registration |
-| GET | `/home` | All public snippets |
-| GET | `/my-snippets` | Current user's snippets |
-| GET | `/create-snippet` | New snippet form |
-| POST | `/create-snippet` | Submit new snippet |
-| GET | `/view-snippet?id=` | View a snippet |
-| GET | `/edit-snippet?id=` | Edit snippet form |
-| POST | `/edit-snippet` | Submit edit |
-| POST | `/delete-snippet` | Delete snippet |
-| GET | `/search` | Search snippets |
-| GET | `/logout` | Log out |

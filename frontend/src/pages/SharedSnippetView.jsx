@@ -56,11 +56,11 @@ export default function SharedSnippetView() {
           </h1>
           <div className="flex items-center gap-3 text-sm text-gray-400">
             <span>by {snippet.username}</span>
-            <span>·</span>
+            <span>{"\u00B7"}</span>
             <span className="font-mono bg-gray-800 px-2 py-0.5 rounded">
               {snippet.language}
             </span>
-            <span>·</span>
+            <span>{"\u00B7"}</span>
             <span>
               {new Date(snippet.createdAt).toLocaleDateString()}
             </span>
@@ -138,7 +138,7 @@ export default function SharedSnippetView() {
       <div className="mt-6 flex items-center justify-between">
         <Link to="/home"
           className="text-sm text-gray-500 hover:text-gray-300 transition-colors">
-          ← Browse snippets
+          {"\u2190"} Browse snippets
         </Link>
         <Link to="/register"
           className="text-sm text-indigo-400 hover:text-indigo-300">

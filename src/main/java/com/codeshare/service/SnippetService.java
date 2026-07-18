@@ -155,11 +155,8 @@ public class SnippetService {
     public Snippet enableSharing(Integer id, User requestingUser) {
         Snippet snippet = getById(id);
 
-        if (!snippet.isPublic()) {
-            if (!snippet.getUser().getId().equals(requestingUser.getId())) {
-                throw new AccessDeniedException(
-                    "Only the owner can share a private snippet");
-            }
+        if (!snippet.getUser().getId().equals(requestingUser.getId())) {
+            throw new AccessDeniedException("Only the owner can share this snippet");
         }
 
         if (snippet.getShareToken() == null) {
