@@ -1,7 +1,28 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
+import CodeMirror from 'codemirror'
+import 'codemirror/lib/codemirror.css'
+import 'codemirror/theme/material-darker.css'
+import 'codemirror/mode/clike/clike'
+import 'codemirror/mode/python/python'
+import 'codemirror/mode/javascript/javascript'
+import 'codemirror/mode/xml/xml'
+import 'codemirror/mode/css/css'
+import 'codemirror/mode/sql/sql'
 import api from '../api'
+
+const CM_MODES = {
+  java: 'text/x-java',
+  python: 'python',
+  javascript: 'javascript',
+  html: 'xml',
+  css: 'css',
+  sql: 'text/x-sql',
+  c: 'text/x-csrc',
+  cpp: 'text/x-c++src',
+  text: null
+}
 
 export default function SharedSnippetView() {
   const { token } = useParams()
@@ -9,6 +30,9 @@ export default function SharedSnippetView() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
+
+  const editorRef = useRef(null)
+  const cmRef = useRef(null)
 
   useEffect(() => {
     api.get(`/snippets/shared/${token}`)
@@ -22,6 +46,26 @@ export default function SharedSnippetView() {
       })
       .finally(() => setLoading(false))
   }, [token])
+
+  useEffect(() => {
+    if (snippet && editorRef.current && !cmRef.current) {
+      cmRef.current = CodeMirror.fromTextArea(editorRef.current, {
+        value: snippet.code,
+        theme: 'material-darker',
+        lineNumbers: true,
+        lineWrapping: true,
+        readOnly: 'nocursor',
+        mode: CM_MODES[snippet.language] || null
+      })
+      cmRef.current.setSize(null, 'auto')
+    }
+    return () => {
+      if (cmRef.current) {
+        cmRef.current.toTextArea()
+        cmRef.current = null
+      }
+    }
+  }, [snippet])
 
   const handleCopy = () => {
     navigator.clipboard.writeText(snippet.code)
@@ -70,22 +114,33 @@ export default function SharedSnippetView() {
 
       {/* Code block */}
       <div className="relative bg-gray-900 border border-gray-700
-        rounded-xl overflow-hidden mb-6">
+        rounded-xl overflow-hidden mb-6 cm-read-only">
         <div className="flex items-center justify-between px-4 py-2
           border-b border-gray-700 bg-gray-800">
           <span className="text-xs text-gray-400 font-mono">
             {snippet.language}
           </span>
-          <button
-            onClick={handleCopy}
-            className="text-xs text-gray-400 hover:text-white transition-colors">
-            {copied ? '✓ Copied' : 'Copy'}
-          </button>
+          <div className="relative">
+            <button
+              onClick={handleCopy}
+              className="text-xs text-gray-400 hover:text-white transition-colors">
+              {copied ? '✓ Copied' : 'Copy'}
+            </button>
+            {copied && (
+              <span className="absolute bottom-full right-0 mb-2 px-2 py-1 
+                bg-indigo-600 text-white text-xs rounded shadow-lg border border-indigo-500 
+                whitespace-nowrap animate-bounce">
+                Copied to clipboard!
+              </span>
+            )}
+          </div>
         </div>
-        <pre className="p-4 overflow-x-auto text-sm text-gray-300
-          font-mono leading-relaxed whitespace-pre">
-          {snippet.code}
-        </pre>
+        <div className="p-4 bg-gray-900">
+          <textarea
+            ref={editorRef}
+            defaultValue={snippet.code}
+          />
+        </div>
       </div>
 
       {/* AI Explanation — shown only if one already exists */}

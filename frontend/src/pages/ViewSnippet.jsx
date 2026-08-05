@@ -1,8 +1,29 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import ReactMarkdown from 'react-markdown'
+import CodeMirror from 'codemirror'
+import 'codemirror/lib/codemirror.css'
+import 'codemirror/theme/material-darker.css'
+import 'codemirror/mode/clike/clike'
+import 'codemirror/mode/python/python'
+import 'codemirror/mode/javascript/javascript'
+import 'codemirror/mode/xml/xml'
+import 'codemirror/mode/css/css'
+import 'codemirror/mode/sql/sql'
 import api from '../api'
+
+const CM_MODES = {
+  java: 'text/x-java',
+  python: 'python',
+  javascript: 'javascript',
+  html: 'xml',
+  css: 'css',
+  sql: 'text/x-sql',
+  c: 'text/x-csrc',
+  cpp: 'text/x-c++src',
+  text: null
+}
 
 export default function ViewSnippet() {
   const { id } = useParams()
@@ -20,6 +41,10 @@ export default function ViewSnippet() {
   const [shareLoading, setShareLoading] = useState(false)
   const [shareCopied, setShareCopied] = useState(false)
   const [shareError, setShareError] = useState('')
+  const [showAiExplanation, setShowAiExplanation] = useState(true)
+
+  const editorRef = useRef(null)
+  const cmRef = useRef(null)
 
   useEffect(() => {
     api.get(`/snippets/${id}`)
@@ -37,9 +62,30 @@ export default function ViewSnippet() {
       .finally(() => setLoading(false))
   }, [id])
 
+  useEffect(() => {
+    if (snippet && editorRef.current && !cmRef.current) {
+      cmRef.current = CodeMirror.fromTextArea(editorRef.current, {
+        value: snippet.code,
+        theme: 'material-darker',
+        lineNumbers: true,
+        lineWrapping: true,
+        readOnly: 'nocursor',
+        mode: CM_MODES[snippet.language] || null
+      })
+      cmRef.current.setSize(null, 'auto')
+    }
+    return () => {
+      if (cmRef.current) {
+        cmRef.current.toTextArea()
+        cmRef.current = null
+      }
+    }
+  }, [snippet])
+
   const handleExplain = async () => {
     setExplaining(true)
     setExplainError('')
+    setShowAiExplanation(true)
     try {
       const res = await api.post(`/snippets/${id}/explain`)
       setExplanation(res.data.explanation)
@@ -174,23 +220,34 @@ export default function ViewSnippet() {
 
       {/* Code block */}
       <div className="relative bg-gray-900 border border-gray-700 
-        rounded-xl overflow-hidden mb-6">
+        rounded-xl overflow-hidden mb-6 cm-read-only">
         <div className="flex items-center justify-between px-4 py-2 
           border-b border-gray-700 bg-gray-800">
           <span className="text-xs text-gray-400 font-mono">
             {snippet.language}
           </span>
-          <button
-            onClick={handleCopy}
-            className="text-xs text-gray-400 hover:text-white 
-              transition-colors">
-            {copied ? '✓ Copied' : 'Copy'}
-          </button>
+          <div className="relative">
+            <button
+              onClick={handleCopy}
+              className="text-xs text-gray-400 hover:text-white 
+                transition-colors">
+              {copied ? '✓ Copied' : 'Copy'}
+            </button>
+            {copied && (
+              <span className="absolute bottom-full right-0 mb-2 px-2 py-1 
+                bg-indigo-600 text-white text-xs rounded shadow-lg border border-indigo-500 
+                whitespace-nowrap animate-bounce">
+                Copied to clipboard!
+              </span>
+            )}
+          </div>
         </div>
-        <pre className="p-4 overflow-x-auto text-sm text-gray-300 
-          font-mono leading-relaxed whitespace-pre">
-          {snippet.code}
-        </pre>
+        <div className="p-4 bg-gray-900">
+          <textarea
+            ref={editorRef}
+            defaultValue={snippet.code}
+          />
+        </div>
       </div>
 
       {/* Share section */}
@@ -232,13 +289,22 @@ export default function ViewSnippet() {
                 px-3 py-2 rounded-lg truncate font-mono">
                 {`${window.location.origin}/share/snippet/${shareToken}`}
               </code>
-              <button
-                onClick={handleCopyShareLink}
-                className="shrink-0 text-xs bg-indigo-600 
-                  hover:bg-indigo-500 text-white px-3 py-2 
-                  rounded-lg transition-colors">
-                {shareCopied ? '✓ Copied' : 'Copy'}
-              </button>
+              <div className="relative shrink-0">
+                <button
+                  onClick={handleCopyShareLink}
+                  className="text-xs bg-indigo-600 
+                    hover:bg-indigo-500 text-white px-3 py-2 
+                    rounded-lg transition-colors">
+                  {shareCopied ? '✓ Copied' : 'Copy'}
+                </button>
+                {shareCopied && (
+                  <span className="absolute bottom-full right-0 mb-2 px-2 py-1 
+                    bg-indigo-600 text-white text-xs rounded shadow-lg border border-indigo-500 
+                    whitespace-nowrap animate-bounce">
+                    Link Copied!
+                  </span>
+                )}
+              </div>
             </div>
           )}
 
@@ -251,98 +317,111 @@ export default function ViewSnippet() {
         </div>
       )}
 
-      {/* AI Explanation */}
-      <div className="bg-gray-900 border border-gray-700 rounded-xl p-5">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-medium text-gray-300">
-            AI Explanation
-          </h2>
-          {isLoggedIn && (
-            <button
-              onClick={handleExplain}
-              disabled={explaining}
-              className="text-xs bg-indigo-600 hover:bg-indigo-500 
-                disabled:opacity-50 text-white px-3 py-1.5 
-                rounded-lg transition-colors">
-              {explaining
-                ? 'Generating...'
-                : explanation
-                  ? 'Regenerate'
-                  : 'Explain this code'}
-            </button>
-          )}
-          {!isLoggedIn && (
-            <Link to="/login"
-              className="text-xs text-indigo-400 hover:text-indigo-300">
-              Sign in to use AI explanation
-            </Link>
-          )}
+      {/* AI Explanation Accordion */}
+      <div className="bg-gray-900 border border-gray-700 rounded-xl p-5 mb-6">
+        <div className="flex items-center justify-between">
+          <div 
+            onClick={() => setShowAiExplanation(prev => !prev)}
+            className="flex items-center gap-2 cursor-pointer select-none group"
+          >
+            <span className={`text-xs text-gray-400 group-hover:text-white transition-transform duration-200 ${showAiExplanation ? 'rotate-90' : 'rotate-0'}`}>
+              ▶
+            </span>
+            <h2 className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors">
+              AI Explanation
+            </h2>
+          </div>
+          <div className="flex items-center gap-3">
+            {isLoggedIn && (
+              <button
+                onClick={handleExplain}
+                disabled={explaining}
+                className="text-xs bg-indigo-600 hover:bg-indigo-500 
+                  disabled:opacity-50 text-white px-3 py-1.5 
+                  rounded-lg transition-colors">
+                {explaining
+                  ? 'Generating...'
+                  : explanation
+                    ? 'Regenerate'
+                    : 'Explain this code'}
+              </button>
+            )}
+            {!isLoggedIn && (
+              <Link to="/login"
+                className="text-xs text-indigo-400 hover:text-indigo-300">
+                Sign in to use AI explanation
+              </Link>
+            )}
+          </div>
         </div>
 
-        {explainError && (
-          <p className="text-red-400 text-sm">{explainError}</p>
-        )}
+        {/* Accordion Content with Height/Opacity transition */}
+        <div className={`transition-all duration-300 overflow-hidden ${showAiExplanation ? 'mt-4 max-h-[1500px] opacity-100' : 'max-h-0 opacity-0'}`}>
+          {explainError && (
+            <p className="text-red-400 text-sm">{explainError}</p>
+          )}
 
-        {explaining && (
-          <p className="text-gray-500 text-sm">
-            Analyzing your code...
-          </p>
-        )}
+          {explaining && (
+            <p className="text-gray-500 text-sm">
+              Analyzing your code...
+            </p>
+          )}
 
-        {explanation && !explaining && (
-          <div className="text-gray-300 text-sm leading-relaxed 
-            prose prose-invert prose-sm max-w-none">
-            <ReactMarkdown
-              components={{
-                code: ({node, className, children, ...props}) => {
-                  const match = /language-(\w+)/.exec(className || '')
-                  return !match ? (
-                    <code className="bg-gray-800 text-indigo-300 px-1.5 py-0.5 rounded text-xs font-mono" {...props}>
-                      {children}
-                    </code>
-                  ) : (
-                    <pre className="bg-gray-800 rounded-lg p-3 overflow-x-auto my-2">
-                      <code className={`${className} text-xs font-mono text-gray-300`} {...props}>
+          {explanation && !explaining && (
+            <div className="text-gray-300 text-sm leading-relaxed 
+              prose prose-invert prose-sm max-w-none border-t border-gray-800 pt-4">
+              <ReactMarkdown
+                components={{
+                  code: ({node, className, children, ...props}) => {
+                    const match = /language-(\w+)/.exec(className || '')
+                    return !match ? (
+                      <code className="bg-gray-800 text-indigo-300 px-1.5 py-0.5 rounded text-xs font-mono" {...props}>
                         {children}
                       </code>
-                    </pre>
-                  )
-                },
-                strong: ({children}) => (
-                  <strong className="text-white font-semibold">
-                    {children}
-                  </strong>
-                ),
-                p: ({children}) => (
-                  <div className="mb-2 last:mb-0">{children}</div>
-                ),
-                ul: ({children}) => (
-                  <ul className="list-disc list-inside space-y-1 mb-2">
-                    {children}
-                  </ul>
-                ),
-                ol: ({children}) => (
-                  <ol className="list-decimal list-inside space-y-1 mb-2">
-                    {children}
-                  </ol>
-                ),
-                li: ({children}) => (
-                  <li className="text-gray-300">{children}</li>
-                ),
-              }}
-            >
-              {explanation}
-            </ReactMarkdown>
-          </div>
-        )}
+                    ) : (
+                      <pre className="bg-gray-800 rounded-lg p-3 overflow-x-auto my-2">
+                        <code className={`${className} text-xs font-mono text-gray-300`} {...props}>
+                          {children}
+                        </code>
+                      </pre>
+                    )
+                  },
+                  strong: ({children}) => (
+                    <strong className="text-white font-semibold">
+                      {children}
+                    </strong>
+                  ),
+                  p: ({children}) => (
+                    <div className="mb-2 last:mb-0">{children}</div>
+                  ),
+                  ul: ({children}) => (
+                    <ul className="list-disc list-inside space-y-1 mb-2">
+                      {children}
+                    </ul>
+                  ),
+                  ol: ({children}) => (
+                    <ol className="list-decimal list-inside space-y-1 mb-2">
+                      {children}
+                    </ol>
+                  ),
+                  li: ({children}) => (
+                    <li className="text-gray-300">{children}</li>
+                  ),
+                }}
+              >
+                {explanation}
+              </ReactMarkdown>
+            </div>
+          )}
 
-        {!explanation && !explaining && !explainError && (
-          <p className="text-gray-600 text-sm">
-            {isLoggedIn
-              ? 'Click "Explain this code" to get an AI-powered explanation.'
-              : 'Sign in to get an AI-powered explanation of this snippet.'}
-          </p>
-        )}
+          {!explanation && !explaining && !explainError && (
+            <p className="text-gray-600 text-sm border-t border-gray-800 pt-4">
+              {isLoggedIn
+                ? 'Click "Explain this code" to get an AI-powered explanation.'
+                : 'Sign in to get an AI-powered explanation of this snippet.'}
+            </p>
+          )}
+        </div>
       </div>
 
       <div className="mt-6">

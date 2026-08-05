@@ -6,7 +6,9 @@ import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "snippets")
+@Table(name = "snippets", indexes = {
+    @Index(name = "idx_snippets_share_token", columnList = "share_token")
+})
 public class Snippet {
 
     @Id

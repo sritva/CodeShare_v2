@@ -177,3 +177,13 @@ html:not(.dark) .theme-toggle-btn:hover {
   border-color: #d0d7de !important;     /* light border */
   transform: rotate(15deg);
 }
+
+/* Read-only CodeMirror height auto overrides */
+.cm-read-only .CodeMirror {
+  height: auto !important;
+}
+.cm-read-only .CodeMirror-scroll {
+  height: auto !important;
+  overflow-y: hidden !important;
+  overflow-x: auto !important;
+}
