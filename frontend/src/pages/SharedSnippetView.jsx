@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import ReactMarkdown from 'react-markdown'
 import CodeMirror from 'codemirror'
 import 'codemirror/lib/codemirror.css'
@@ -26,10 +27,13 @@ const CM_MODES = {
 
 export default function SharedSnippetView() {
   const { token } = useParams()
+  const { isLoggedIn, username } = useAuth()
+  const navigate = useNavigate()
   const [snippet, setSnippet] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
+  const [forkLoading, setForkLoading] = useState(false)
 
   const editorRef = useRef(null)
   const cmRef = useRef(null)
@@ -73,6 +77,25 @@ export default function SharedSnippetView() {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const handleFork = async () => {
+    if (!isLoggedIn) {
+      navigate('/login')
+      return
+    }
+    if (!window.confirm('Would you like to fork this snippet to your profile?')) return
+    setForkLoading(true)
+    try {
+      const res = await api.post(`/snippets/${snippet.id}/fork`)
+      navigate(`/snippet/${res.data.id}`)
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to fork snippet')
+    } finally {
+      setForkLoading(false)
+    }
+  }
+
+  const isOwner = isLoggedIn && snippet?.username === username
+
   if (loading) return (
     <div className="text-center text-gray-500 py-16">
       Loading...
@@ -98,8 +121,16 @@ export default function SharedSnippetView() {
           <h1 className="text-2xl font-bold text-white mb-1">
             {snippet.title}
           </h1>
+          {snippet.parentId && (
+            <div className="text-xs text-gray-500 mb-2">
+              🍴 Forked from{' '}
+              <Link to={`/snippet/${snippet.parentId}`} className="text-indigo-400 hover:underline">
+                @{snippet.parentUsername}/{snippet.parentTitle}
+              </Link>
+            </div>
+          )}
           <div className="flex items-center gap-3 text-sm text-gray-400">
-            <span>by {snippet.username}</span>
+            <span>by <Link to={`/user/${snippet.username}`} className="text-indigo-400 hover:text-indigo-300 font-medium">@{snippet.username}</Link></span>
             <span>{"\u00B7"}</span>
             <span className="font-mono bg-gray-800 px-2 py-0.5 rounded">
               {snippet.language}
@@ -109,6 +140,18 @@ export default function SharedSnippetView() {
               {new Date(snippet.createdAt).toLocaleDateString()}
             </span>
           </div>
+        </div>
+        <div className="flex gap-2 shrink-0">
+          {!isOwner && (
+            <button
+              onClick={handleFork}
+              disabled={forkLoading}
+              className="text-sm bg-indigo-650 hover:bg-indigo-600 disabled:opacity-50
+                text-white px-3 py-1.5 rounded-lg transition-all font-medium shadow-md hover:shadow-indigo-900/40"
+            >
+              {forkLoading ? 'Forking...' : 'Fork'}
+            </button>
+          )}
         </div>
       </div>
 

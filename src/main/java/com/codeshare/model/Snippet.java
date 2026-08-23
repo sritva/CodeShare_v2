@@ -182,4 +182,63 @@ public class Snippet {
     public void setSharedAt(LocalDateTime sharedAt) {
         this.sharedAt = sharedAt;
     }
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "snippet_likes",
+        joinColumns = @JoinColumn(name = "snippet_id"),
+        inverseJoinColumns = @JoinColumn(name = "user_id")
+    )
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private java.util.Set<User> likedBy = new java.util.HashSet<>();
+
+    public java.util.Set<User> getLikedBy() {
+        return likedBy;
+    }
+
+    public void setLikedBy(java.util.Set<User> likedBy) {
+        this.likedBy = likedBy;
+    }
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "snippet_stars",
+        joinColumns = @JoinColumn(name = "snippet_id"),
+        inverseJoinColumns = @JoinColumn(name = "user_id")
+    )
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private java.util.Set<User> starredBy = new java.util.HashSet<>();
+
+    public java.util.Set<User> getStarredBy() {
+        return starredBy;
+    }
+
+    public void setStarredBy(java.util.Set<User> starredBy) {
+        this.starredBy = starredBy;
+    }
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_id")
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private Snippet parent;
+
+    public Snippet getParent() {
+        return parent;
+    }
+
+    public void setParent(Snippet parent) {
+        this.parent = parent;
+    }
+
+    public String getParentUsername() {
+        return parent != null ? parent.getUsername() : null;
+    }
+
+    public String getParentTitle() {
+        return parent != null ? parent.getTitle() : null;
+    }
+
+    public Integer getParentIdValue() {
+        return parent != null ? parent.getId() : null;
+    }
 }

@@ -6,6 +6,8 @@ import com.codeshare.repository.SnippetRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -34,6 +36,7 @@ public class SnippetService {
         return snippetRepository.findByIsPublicTrueOrderByCreatedAtDesc();
     }
 
+    @Cacheable(value = "snippets", key = "'public-page-' + #page")
     public Page<Snippet> getAllPublic(int page) {
         Pageable pageable = PageRequest.of(page, PAGE_SIZE, Sort.by(Sort.Direction.DESC, "createdAt"));
         return snippetRepository.findByIsPublicTrue(pageable);
@@ -49,6 +52,7 @@ public class SnippetService {
     }
 
     @Transactional
+    @CacheEvict(value = "snippets", allEntries = true)
     public Snippet create(Snippet snippet, User user) {
         if (snippet.getTitle() == null || snippet.getTitle().trim().isEmpty()) {
             throw new IllegalArgumentException("Snippet title cannot be empty");
@@ -69,6 +73,7 @@ public class SnippetService {
     }
 
     @Transactional
+    @CacheEvict(value = "snippets", allEntries = true)
     public Snippet update(Integer id, Snippet snippetDetails, User currentUser) {
         log.info("Snippet updated - id: {}, user: {}", id, currentUser.getUsername());
         Snippet existing = getById(id);
@@ -101,6 +106,7 @@ public class SnippetService {
     }
 
     @Transactional
+    @CacheEvict(value = "snippets", allEntries = true)
     public void delete(Integer id, User currentUser) {
         log.info("Snippet deleted - id: {}, user: {}", id, currentUser.getUsername());
         Snippet existing = getById(id);
@@ -128,6 +134,7 @@ public class SnippetService {
         }
     }
 
+    @Cacheable(value = "snippets", key = "'search-' + #title + '-' + #language + '-' + #page")
     public Page<Snippet> search(String title, String language, int page) {
         boolean hasTitle = title != null && !title.trim().isEmpty();
         boolean hasLanguage = language != null && !language.trim().isEmpty();
@@ -145,6 +152,7 @@ public class SnippetService {
     }
 
     @Transactional
+    @CacheEvict(value = "snippets", allEntries = true)
     public Snippet updateExplanation(Integer id, String aiExplanation) {
         Snippet existing = getById(id);
         existing.setAiExplanation(aiExplanation);
@@ -152,6 +160,7 @@ public class SnippetService {
     }
 
     @Transactional
+    @CacheEvict(value = "snippets", allEntries = true)
     public Snippet enableSharing(Integer id, User requestingUser) {
         Snippet snippet = getById(id);
 
@@ -171,6 +180,7 @@ public class SnippetService {
     }
 
     @Transactional
+    @CacheEvict(value = "snippets", allEntries = true)
     public Snippet disableSharing(Integer id, User requestingUser) {
         Snippet snippet = getById(id);
 
@@ -196,5 +206,68 @@ public class SnippetService {
                 HttpStatus.GONE, "This share link has been disabled");
         }
         return snippet;
+    }
+
+    @Transactional
+    @CacheEvict(value = "snippets", allEntries = true)
+    public void likeSnippet(Integer snippetId, User user) {
+        Snippet snippet = getById(snippetId);
+        snippet.getLikedBy().add(user);
+        snippetRepository.save(snippet);
+    }
+
+    @Transactional
+    @CacheEvict(value = "snippets", allEntries = true)
+    public void unlikeSnippet(Integer snippetId, User user) {
+        Snippet snippet = getById(snippetId);
+        snippet.getLikedBy().removeIf(u -> u.getId().equals(user.getId()));
+        snippetRepository.save(snippet);
+    }
+
+    @Transactional
+    @CacheEvict(value = "snippets", allEntries = true)
+    public Snippet fork(Integer id, User user) {
+        Snippet parent = getById(id);
+        
+        // Security check: cannot fork a private snippet of someone else unless shared
+        if (!parent.isPublic() && !parent.getUser().getId().equals(user.getId()) && !parent.isShareEnabled()) {
+            throw new AccessDeniedException("Unauthorized to fork this snippet");
+        }
+
+        Snippet fork = new Snippet();
+        fork.setTitle("Fork of " + parent.getTitle());
+        fork.setCode(parent.getCode());
+        fork.setLanguage(parent.getLanguage());
+        fork.setPublic(parent.isPublic());
+        fork.setUser(user);
+        fork.setParent(parent);
+        
+        Snippet savedFork = snippetRepository.save(fork);
+        log.info("Snippet forked - original id: {}, fork id: {}, user: {}", parent.getId(), savedFork.getId(), user.getUsername());
+        return savedFork;
+    }
+
+    public List<Snippet> getPublicByUser(User user) {
+        return snippetRepository.findByUserAndIsPublicTrueOrderByCreatedAtDesc(user);
+    }
+
+    @Transactional
+    @CacheEvict(value = "snippets", allEntries = true)
+    public void starSnippet(Integer snippetId, User user) {
+        Snippet snippet = getById(snippetId);
+        snippet.getStarredBy().add(user);
+        snippetRepository.save(snippet);
+    }
+
+    @Transactional
+    @CacheEvict(value = "snippets", allEntries = true)
+    public void unstarSnippet(Integer snippetId, User user) {
+        Snippet snippet = getById(snippetId);
+        snippet.getStarredBy().removeIf(u -> u.getId().equals(user.getId()));
+        snippetRepository.save(snippet);
+    }
+
+    public List<Snippet> getStarredByUser(User user) {
+        return snippetRepository.findStarredByUser(user);
     }
 }

@@ -9,30 +9,47 @@ const LANGUAGES = [
 
 function SnippetCard({ snippet }) {
   return (
-    <Link to={`/snippet/${snippet.id}`}
-      className="block bg-gray-900 border border-gray-700 rounded-xl 
-        p-5 hover:border-indigo-500 transition-colors group">
-      <div className="flex items-start justify-between gap-4 mb-3">
-        <h2 className="text-white font-medium group-hover:text-indigo-400 
-          transition-colors line-clamp-1">
-          {snippet.title}
-        </h2>
-        <span className="shrink-0 text-xs bg-gray-800 text-gray-400 
-          px-2 py-1 rounded-md font-mono">
-          {snippet.language}
-        </span>
+    <div className="bg-gray-900 border border-gray-700 rounded-xl p-5 hover:border-indigo-500/50 transition-colors group flex flex-col justify-between">
+      <div>
+        <div className="flex items-start justify-between gap-4 mb-3">
+          <Link to={`/snippet/${snippet.id}`} className="block flex-1">
+            <h2 className="text-white font-medium group-hover:text-indigo-400 transition-colors line-clamp-1">
+              {snippet.title}
+            </h2>
+          </Link>
+          <span className="shrink-0 text-xs bg-gray-800 text-gray-400 px-2 py-1 rounded-md font-mono">
+            {snippet.language}
+          </span>
+        </div>
+
+        {snippet.parentIdValue && (
+          <div className="text-[10px] text-gray-500 mb-2">
+            🍴 Forked from{' '}
+            <Link to={`/snippet/${snippet.parentIdValue}`} className="text-indigo-400 hover:underline">
+              @{snippet.parentUsername}/{snippet.parentTitle}
+            </Link>
+          </div>
+        )}
+
+        <Link to={`/snippet/${snippet.id}`} className="block">
+          <pre className="code-preview-box text-xs font-mono border rounded-lg p-3 overflow-hidden line-clamp-3 whitespace-pre-wrap">
+            {snippet.code}
+          </pre>
+        </Link>
       </div>
-      <pre className="text-gray-400 text-xs font-mono bg-gray-800 
-        rounded-lg p-3 overflow-hidden line-clamp-3 whitespace-pre-wrap">
-        {snippet.code}
-      </pre>
-      <div className="mt-3 flex items-center justify-between">
-        <span className="text-xs text-gray-500">by {snippet.username}</span>
+
+      <div className="mt-3 flex items-center justify-between border-t border-gray-800/50 pt-3">
+        <span className="text-xs text-gray-500">
+          by{' '}
+          <Link to={`/user/${snippet.username}`} className="text-indigo-400 hover:text-indigo-300 font-medium">
+            @{snippet.username}
+          </Link>
+        </span>
         <span className="text-xs text-gray-600">
           {new Date(snippet.createdAt).toLocaleDateString()}
         </span>
       </div>
-    </Link>
+    </div>
   )
 }
 

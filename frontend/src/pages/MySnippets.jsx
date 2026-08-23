@@ -45,7 +45,21 @@ function SnippetRow({ snippet, onDelete }) {
               Shared
             </span>
           )}
+          {snippet.parentIdValue && (
+            <span className="shrink-0 text-xs px-2 py-0.5 rounded 
+              bg-purple-900/40 text-purple-400">
+              Forked
+            </span>
+          )}
         </div>
+        {snippet.parentIdValue && (
+          <div className="text-[10px] text-gray-500 mb-1">
+            🍴 Forked from{' '}
+            <Link to={`/snippet/${snippet.parentIdValue}`} className="text-indigo-400 hover:underline">
+              @{snippet.parentUsername}/{snippet.parentTitle}
+            </Link>
+          </div>
+        )}
         <p className="text-xs text-gray-500">
           {new Date(snippet.createdAt).toLocaleDateString()}
         </p>

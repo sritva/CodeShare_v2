@@ -70,14 +70,19 @@ export default function Navbar() {
               className="text-sm text-gray-300 hover:text-white">
               My Snippets
             </Link>
+            <Link to="/starred" 
+              className="text-sm text-gray-300 hover:text-white">
+              Starred
+            </Link>
             <Link to="/create" 
               className="text-sm bg-indigo-600 hover:bg-indigo-500 
                 px-3 py-1.5 rounded-md">
               + New
             </Link>
-            <span className="text-sm text-gray-400">
+            <Link to={`/user/${username}`} 
+              className="text-sm text-gray-300 hover:text-white">
               {username}
-            </span>
+            </Link>
             <button onClick={logout} 
               className="text-sm text-gray-400 hover:text-white">
               Logout
