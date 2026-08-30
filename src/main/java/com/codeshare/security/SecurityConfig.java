@@ -51,6 +51,8 @@ public class SecurityConfig {
                 .dispatcherTypeMatchers(DispatcherType.FORWARD,
                     DispatcherType.ERROR).permitAll()
                 .requestMatchers(
+                    "/actuator/health",
+                    "/actuator/health/**",
                     "/api/auth/**",
                     "/api/snippets/public",
                     "/api/snippets/search",

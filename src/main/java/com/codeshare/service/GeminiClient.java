@@ -16,7 +16,7 @@ import java.time.Duration;
 @Service
 public class GeminiClient {
 
-    @Value("${gemini.api.key:}")
+    @Value("${gemini.api.key}")
     private String apiKey;
 
     private final HttpClient httpClient = HttpClient.newBuilder()
