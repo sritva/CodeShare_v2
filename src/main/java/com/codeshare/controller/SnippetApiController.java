@@ -281,8 +281,11 @@ public class SnippetApiController {
             return ResponseEntity.ok(Map.of("explanation", explanation));
         } catch (Exception e) {
             log.error("Failed to generate AI explanation for snippet ID {}: {}", id, e.getMessage(), e);
+            String message = (e.getMessage() != null && !e.getMessage().trim().isEmpty())
+                    ? e.getMessage()
+                    : "Failed to generate explanation";
             return ResponseEntity.status(500)
-                .body(Map.of("error", "Failed to generate explanation"));
+                .body(Map.of("error", message));
         }
     }
 
