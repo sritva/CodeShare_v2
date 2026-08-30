@@ -25,7 +25,12 @@ export default function Register() {
       await api.post('/auth/register', form)
       navigate('/login?registered=true')
     } catch (err) {
-      setError(err.response?.data?.error || 'Registration failed')
+      const errorMsg =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        (err.message === 'Network Error' ? 'Cannot connect to backend server. Please try again.' : err.message) ||
+        'Registration failed'
+      setError(errorMsg)
     } finally {
       setLoading(false)
     }
