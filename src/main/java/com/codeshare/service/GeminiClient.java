@@ -23,7 +23,7 @@ public class GeminiClient {
     private String model;
 
     private final HttpClient httpClient = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(10))
+            .connectTimeout(Duration.ofSeconds(20))
             .build();
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -53,6 +53,11 @@ public class GeminiClient {
         ObjectNode partObject = partsArray.addObject();
         partObject.put("text", prompt);
 
+        // Configure thinkingConfig for gemini-3.7-flash with low thinking level for fast response
+        ObjectNode generationConfig = rootNode.putObject("generationConfig");
+        ObjectNode thinkingConfig = generationConfig.putObject("thinkingConfig");
+        thinkingConfig.put("thinkingLevel", "low");
+
         String jsonRequestBody = objectMapper.writeValueAsString(rootNode);
         String resolvedModel = (model != null && !model.trim().isEmpty()) ? model.trim() : "gemini-3.7-flash";
         String url = "https://generativelanguage.googleapis.com/v1beta/models/" + resolvedModel + ":generateContent?key=" + resolvedKey;
@@ -61,7 +66,7 @@ public class GeminiClient {
                 .uri(URI.create(url))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(jsonRequestBody))
-                .timeout(Duration.ofSeconds(20))
+                .timeout(Duration.ofSeconds(60))
                 .build();
 
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
