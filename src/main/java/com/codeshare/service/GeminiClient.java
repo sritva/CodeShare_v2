@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +17,9 @@ import java.time.Duration;
 
 @Service
 public class GeminiClient {
+
+    private static final Logger log = LoggerFactory.getLogger(GeminiClient.class);
+    private static final String FALLBACK_MODEL = "gemini-2.0-flash";
 
     @Value("${gemini.api.key}")
     private String apiKey;
@@ -46,6 +51,21 @@ public class GeminiClient {
                 "Format your explanation in clean, professional markdown. Here is the code:\n\n" +
                 code;
 
+        String primaryModel = (model != null && !model.trim().isEmpty()) ? model.trim() : FALLBACK_MODEL;
+
+        try {
+            return callGemini(primaryModel, prompt, resolvedKey);
+        } catch (Exception e) {
+            if (!primaryModel.equalsIgnoreCase(FALLBACK_MODEL)) {
+                log.warn("Primary model '{}' failed ({}), automatically retrying with fallback '{}'...",
+                        primaryModel, e.getMessage(), FALLBACK_MODEL);
+                return callGemini(FALLBACK_MODEL, prompt, resolvedKey);
+            }
+            throw e;
+        }
+    }
+
+    private String callGemini(String targetModel, String prompt, String resolvedKey) throws Exception {
         ObjectNode rootNode = objectMapper.createObjectNode();
         ArrayNode contentsArray = rootNode.putArray("contents");
         ObjectNode contentObject = contentsArray.addObject();
@@ -54,8 +74,7 @@ public class GeminiClient {
         partObject.put("text", prompt);
 
         String jsonRequestBody = objectMapper.writeValueAsString(rootNode);
-        String resolvedModel = (model != null && !model.trim().isEmpty()) ? model.trim() : "gemini-2.0-flash";
-        String url = "https://generativelanguage.googleapis.com/v1beta/models/" + resolvedModel + ":generateContent?key=" + resolvedKey;
+        String url = "https://generativelanguage.googleapis.com/v1beta/models/" + targetModel + ":generateContent?key=" + resolvedKey;
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
@@ -76,7 +95,7 @@ public class GeminiClient {
             if (details != null && !details.trim().isEmpty()) {
                 throw new RuntimeException("Gemini API error (" + response.statusCode() + "): " + details);
             }
-            throw new RuntimeException("Failed to call Gemini API. HTTP status code: " + response.statusCode());
+            throw new RuntimeException("Failed to call Gemini API (" + targetModel + "). HTTP status code: " + response.statusCode());
         }
 
         JsonNode responseRoot = objectMapper.readTree(response.body());
@@ -95,7 +114,7 @@ public class GeminiClient {
 
         String explanation = sb.toString().trim();
         if (explanation.isEmpty()) {
-            throw new RuntimeException("Received empty explanation from Gemini API.");
+            throw new RuntimeException("Received empty explanation from Gemini API (" + targetModel + ").");
         }
 
         return explanation;
