@@ -53,13 +53,8 @@ public class GeminiClient {
         ObjectNode partObject = partsArray.addObject();
         partObject.put("text", prompt);
 
-        // Configure thinkingConfig for gemini-3.7-flash with low thinking level for fast response
-        ObjectNode generationConfig = rootNode.putObject("generationConfig");
-        ObjectNode thinkingConfig = generationConfig.putObject("thinkingConfig");
-        thinkingConfig.put("thinkingLevel", "low");
-
         String jsonRequestBody = objectMapper.writeValueAsString(rootNode);
-        String resolvedModel = (model != null && !model.trim().isEmpty()) ? model.trim() : "gemini-3.7-flash";
+        String resolvedModel = (model != null && !model.trim().isEmpty()) ? model.trim() : "gemini-2.0-flash";
         String url = "https://generativelanguage.googleapis.com/v1beta/models/" + resolvedModel + ":generateContent?key=" + resolvedKey;
 
         HttpRequest request = HttpRequest.newBuilder()
@@ -85,15 +80,21 @@ public class GeminiClient {
         }
 
         JsonNode responseRoot = objectMapper.readTree(response.body());
-        String explanation = responseRoot.path("candidates")
-                .path(0)
-                .path("content")
-                .path("parts")
-                .path(0)
-                .path("text")
-                .asText();
+        JsonNode parts = responseRoot.path("candidates").path(0).path("content").path("parts");
+        StringBuilder sb = new StringBuilder();
+        if (parts.isArray()) {
+            for (JsonNode part : parts) {
+                if (!part.path("thought").asBoolean(false)) {
+                    String text = part.path("text").asText("");
+                    if (!text.isEmpty()) {
+                        sb.append(text);
+                    }
+                }
+            }
+        }
 
-        if (explanation == null || explanation.trim().isEmpty()) {
+        String explanation = sb.toString().trim();
+        if (explanation.isEmpty()) {
             throw new RuntimeException("Received empty explanation from Gemini API.");
         }
 
