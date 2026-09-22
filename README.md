@@ -12,16 +12,16 @@ A modern full-stack platform for sharing, discovering, and collaborating on code
 - **Social & Engagement**:
   - **Starring** — Star snippets to save them to your personal Starred library (`/starred`).
   - **Liking** — Upvote snippets with real-time like counts displayed across feeds and snippet views.
-  - **Comments** — Discuss snippets with threaded comments and author-managed deletion.
+  - **Comments** — Flat comment discussions; comments can be deleted by their author or the snippet owner. Private comments are restricted to the snippet owner.
 - **User Profiles** — Public profile pages (`/user/:username`) displaying user bio, avatar, GitHub & LinkedIn links, and published snippets. Editable from the profile view.
-- **Resilient AI Code Explanations** — Powered by Google Gemini (`gemini-3.7-flash` with automatic fallback to `gemini-2.0-flash`). Features thinking token filtering for clean Markdown rendering, cached responses via Caffeine, and per-user rate limiting.
+- **AI Code Explanations** — Powered by Google Gemini with a configurable primary model and fallback. Explanations are stored with snippets, invalidated after code/language changes, and protected against stale in-flight results. Includes thinking-token filtering and per-user rate limiting.
 - **Shareable Links** — Generate token-based public links for any snippet (public or private), viewable without an account, with instant copy and fork capabilities.
 - **Search & Discovery** — Fast search by title keywords and language filters with pagination.
-- **Production-Ready Architecture**:
+- **Runtime Features**:
   - In-memory Caffeine caching for high performance.
   - Spring Boot Actuator health checks (`/actuator/health`).
   - Gzip HTTP compression enabled.
-  - Multi-stage Docker containerization with automated health checks.
+  - Multi-stage Docker containerization and a Compose database health check.
 
 ---
 
@@ -47,7 +47,7 @@ A modern full-stack platform for sharing, discovering, and collaborating on code
 ### Prerequisites
 
 - Java 17+
-- Maven 3.9+ (or use the included `mvn.bat` / `mvn.ps1`)
+- Maven 3.9+ installed on PATH. The included Windows launchers delegate to installed Maven; they are not a bundled Maven distribution or Maven Wrapper.
 - Node.js 20+ & npm (handled automatically by Maven during build, or needed for independent frontend dev)
 - Docker & Docker Compose (optional, for containerized deployment)
 
@@ -55,16 +55,16 @@ A modern full-stack platform for sharing, discovering, and collaborating on code
 
 ### Running Locally
 
-#### 1. H2 In-Memory Mode (Zero Setup)
+#### 1. H2 In-Memory Demo (No Database Setup)
 
-Runs with an in-memory database seeded with sample users and snippets:
+Activate `dev` to use the local-only JWT secret and seed sample users and snippets. Data is lost when the process stops. Never activate `dev` on a deployed instance.
 
 ```bash
 # Windows (PowerShell / Command Prompt)
-.\mvn.bat spring-boot:run
+.\mvn.bat spring-boot:run -Dspring-boot.run.profiles=dev
 
 # Linux / macOS
-mvn spring-boot:run
+mvn spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
 Open **http://localhost:8080** in your browser.
@@ -81,10 +81,12 @@ Open **http://localhost:8080** in your browser.
    export SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/codeshare
    export SPRING_DATASOURCE_USERNAME=root
    export SPRING_DATASOURCE_PASSWORD=yourpassword
-   export JWT_SECRET=your-secure-jwt-secret-min-32-chars-long
+   export JWT_SECRET=your-random-secret-at-least-32-bytes-long
    ```
 
-3. Run with the MySQL profile:
+   In PowerShell, use `$env:VARIABLE_NAME = 'value'` instead of `export`. Maven does not automatically load `.env`; that file is used by Docker Compose.
+
+3. Run with the MySQL profile (no demo users are seeded):
    ```bash
    # Windows
    .\mvn.bat spring-boot:run -Dspring-boot.run.profiles=mysql
@@ -99,11 +101,11 @@ For active frontend development with Vite HMR:
 
 ```bash
 # Terminal 1 — Start Backend
-.\mvn.bat spring-boot:run
+.\mvn.bat spring-boot:run -Dspring-boot.run.profiles=dev
 
 # Terminal 2 — Start Vite Dev Server
 cd frontend
-npm install
+npm ci
 npm run dev
 ```
 
@@ -133,7 +135,10 @@ Run the complete multi-container setup (MySQL 8 + Spring Boot App with embedded 
 # 1. Create environment file from template
 cp .env.example .env
 
-# 2. Start containers
+# 2. Set a random JWT_SECRET in .env and replace demo database passwords.
+# GEMINI_API_KEY can remain blank.
+
+# 3. Start containers
 docker compose up --build
 ```
 
@@ -150,7 +155,7 @@ docker compose down
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `JWT_SECRET` | Yes | — | Secret key for HMAC-SHA signing of JWTs (min 32 characters). |
+| `JWT_SECRET` | Outside `dev` | — | Random secret for HMAC-SHA signing of JWTs (at least 32 bytes). `dev` has a local-demo-only fallback. |
 | `GEMINI_API_KEY` | No | — | Google Gemini API key. AI code explanation is disabled if not provided. |
 | `GEMINI_MODEL` | No | `gemini-3.7-flash` | Primary Gemini model (falls back to `gemini-2.0-flash` on failure). |
 | `PORT` | No | `8080` | Web server port. |
@@ -165,7 +170,7 @@ docker compose down
 
 ## Demo Accounts
 
-Pre-seeded into the database automatically on startup:
+Seeded only with the `dev` profile when the users table is empty. MySQL and Docker runs do not automatically create these accounts:
 
 | Username | Password |
 |---|---|
@@ -198,14 +203,14 @@ Pre-seeded into the database automatically on startup:
 | `POST` | `/api/snippets` | JWT | Create a new snippet. |
 | `PUT` | `/api/snippets/{id}` | JWT | Update snippet (owner only). |
 | `DELETE` | `/api/snippets/{id}` | JWT | Delete snippet (owner only). |
-| `POST` | `/api/snippets/{id}/fork` | JWT | Fork snippet into authenticated user's library. |
+| `POST` | `/api/snippets/{id}/fork` | JWT | Fork a public/owned snippet. Shared private snippets additionally require JSON `{"shareToken":"..."}`. |
 | `POST` | `/api/snippets/{id}/like` | JWT | Like snippet. |
 | `POST` | `/api/snippets/{id}/unlike` | JWT | Remove like from snippet. |
 | `POST` | `/api/snippets/{id}/star` | JWT | Star snippet. |
 | `POST` | `/api/snippets/{id}/unstar` | JWT | Unstar snippet. |
 | `GET` | `/api/snippets/{id}/comments` | Public | Retrieve comments on snippet. |
 | `POST` | `/api/snippets/{id}/comments` | JWT | Add comment to snippet. |
-| `DELETE` | `/api/snippets/comments/{commentId}` | JWT | Delete comment (comment author only). |
+| `DELETE` | `/api/snippets/comments/{commentId}` | JWT | Delete comment (comment author or snippet owner). |
 | `POST` | `/api/snippets/{id}/explain` | JWT | Generate/fetch cached Gemini AI code explanation. |
 | `POST` | `/api/snippets/{id}/share` | JWT | Generate a secret share token. |
 | `POST` | `/api/snippets/{id}/unshare` | JWT | Revoke share token. |

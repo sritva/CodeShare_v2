@@ -17,12 +17,14 @@ public class CommentService {
         this.commentRepository = commentRepository;
     }
 
-    public List<Comment> getCommentsForSnippet(Snippet snippet) {
+    public List<Comment> getCommentsForSnippet(Snippet snippet, User user) {
+        SnippetAccessPolicy.requireRead(snippet, user);
         return commentRepository.findBySnippetOrderByCreatedAtAsc(snippet);
     }
 
     @Transactional
     public Comment addComment(Snippet snippet, User user, String content) {
+        SnippetAccessPolicy.requireInteraction(snippet, user);
         if (content == null || content.trim().isEmpty()) {
             throw new IllegalArgumentException("Comment content cannot be empty");
         }

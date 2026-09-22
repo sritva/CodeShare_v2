@@ -2,6 +2,7 @@ package com.codeshare.security;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpMethod;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -50,13 +51,17 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .dispatcherTypeMatchers(DispatcherType.FORWARD,
                     DispatcherType.ERROR).permitAll()
+                .requestMatchers(HttpMethod.GET,
+                    "/api/snippets/{id:[0-9]+}",
+                    "/api/snippets/{id:[0-9]+}/comments",
+                    "/api/users/{username}",
+                    "/starred", "/user/**").permitAll()
                 .requestMatchers(
                     "/actuator/health",
                     "/actuator/health/**",
                     "/api/auth/**",
                     "/api/snippets/public",
                     "/api/snippets/search",
-                    "/api/snippets/*/explain",
                     "/api/snippets/shared/**",
                     "/",
                     "/index.html",

@@ -25,9 +25,12 @@ public class SnippetService {
 
     private final SnippetRepository snippetRepository;
 
+    private final jakarta.persistence.EntityManager entityManager;
+
     @Autowired
-    public SnippetService(SnippetRepository snippetRepository) {
+    public SnippetService(SnippetRepository snippetRepository, jakarta.persistence.EntityManager entityManager) {
         this.snippetRepository = snippetRepository;
+        this.entityManager = entityManager;
     }
 
     private static final int PAGE_SIZE = 10;
@@ -45,6 +48,20 @@ public class SnippetService {
     public Snippet getById(Integer id) {
         return snippetRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Snippet not found"));
+    }
+
+    public Snippet getReadableById(Integer id, User user) {
+        Snippet snippet = getById(id);
+        SnippetAccessPolicy.requireRead(snippet, user);
+        return snippet;
+    }
+
+    private Snippet getForUpdate(Integer id) {
+        Snippet snippet = snippetRepository.findForUpdate(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Snippet not found"));
+        // Open EntityManager in View may already hold a pre-inference snapshot.
+        entityManager.refresh(snippet, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+        return snippet;
     }
 
     public List<Snippet> getByUser(User user) {
@@ -76,7 +93,7 @@ public class SnippetService {
     @CacheEvict(value = "snippets", allEntries = true)
     public Snippet update(Integer id, Snippet snippetDetails, User currentUser) {
         log.info("Snippet updated - id: {}, user: {}", id, currentUser.getUsername());
-        Snippet existing = getById(id);
+        Snippet existing = getForUpdate(id);
         
         // Ownership check
         if (!existing.getUser().getId().equals(currentUser.getId())) {
@@ -97,6 +114,10 @@ public class SnippetService {
             throw new IllegalArgumentException("Snippet language cannot be empty");
         }
 
+        if (!java.util.Objects.equals(existing.getCode(), snippetDetails.getCode())
+                || !java.util.Objects.equals(existing.getLanguage(), snippetDetails.getLanguage())) {
+            existing.setAiExplanation(null);
+        }
         existing.setTitle(snippetDetails.getTitle().trim());
         existing.setCode(snippetDetails.getCode());
         existing.setLanguage(snippetDetails.getLanguage());
@@ -153,8 +174,14 @@ public class SnippetService {
 
     @Transactional
     @CacheEvict(value = "snippets", allEntries = true)
-    public Snippet updateExplanation(Integer id, String aiExplanation) {
-        Snippet existing = getById(id);
+    public Snippet updateExplanation(Integer id, String expectedCode, String expectedLanguage,
+                                     String aiExplanation) {
+        Snippet existing = getForUpdate(id);
+        if (!java.util.Objects.equals(existing.getCode(), expectedCode)
+                || !java.util.Objects.equals(existing.getLanguage(), expectedLanguage)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Snippet changed while generating the explanation. Please try again.");
+        }
         existing.setAiExplanation(aiExplanation);
         return snippetRepository.save(existing);
     }
@@ -212,6 +239,7 @@ public class SnippetService {
     @CacheEvict(value = "snippets", allEntries = true)
     public void likeSnippet(Integer snippetId, User user) {
         Snippet snippet = getById(snippetId);
+        SnippetAccessPolicy.requireInteraction(snippet, user);
         snippet.getLikedBy().add(user);
         snippetRepository.save(snippet);
     }
@@ -227,12 +255,14 @@ public class SnippetService {
     @Transactional
     @CacheEvict(value = "snippets", allEntries = true)
     public Snippet fork(Integer id, User user) {
+        return fork(id, user, null);
+    }
+
+    @Transactional
+    @CacheEvict(value = "snippets", allEntries = true)
+    public Snippet fork(Integer id, User user, String shareToken) {
         Snippet parent = getById(id);
-        
-        // Security check: cannot fork a private snippet of someone else unless shared
-        if (!parent.isPublic() && !parent.getUser().getId().equals(user.getId()) && !parent.isShareEnabled()) {
-            throw new AccessDeniedException("Unauthorized to fork this snippet");
-        }
+        SnippetAccessPolicy.requireFork(parent, user, shareToken);
 
         Snippet fork = new Snippet();
         fork.setTitle("Fork of " + parent.getTitle());
@@ -255,6 +285,7 @@ public class SnippetService {
     @CacheEvict(value = "snippets", allEntries = true)
     public void starSnippet(Integer snippetId, User user) {
         Snippet snippet = getById(snippetId);
+        SnippetAccessPolicy.requireInteraction(snippet, user);
         snippet.getStarredBy().add(user);
         snippetRepository.save(snippet);
     }
@@ -268,6 +299,8 @@ public class SnippetService {
     }
 
     public List<Snippet> getStarredByUser(User user) {
-        return snippetRepository.findStarredByUser(user);
+        return snippetRepository.findStarredByUser(user).stream()
+                .filter(snippet -> SnippetAccessPolicy.canRead(snippet, user))
+                .toList();
     }
 }

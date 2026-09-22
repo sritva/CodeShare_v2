@@ -44,6 +44,7 @@ public class SnippetRequest {
         return isPublic;
     }
 
+    @com.fasterxml.jackson.annotation.JsonAlias("isPublic")
     public void setPublic(boolean isPublic) {
         this.isPublic = isPublic;
     }

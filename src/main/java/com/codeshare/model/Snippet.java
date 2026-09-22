@@ -159,6 +159,7 @@ public class Snippet {
         return user != null ? user.getUsername() : "";
     }
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public String getShareToken() {
         return shareToken;
     }

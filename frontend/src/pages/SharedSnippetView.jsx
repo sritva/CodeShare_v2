@@ -85,7 +85,7 @@ export default function SharedSnippetView() {
     if (!window.confirm('Would you like to fork this snippet to your profile?')) return
     setForkLoading(true)
     try {
-      const res = await api.post(`/snippets/${snippet.id}/fork`)
+      const res = await api.post(`/snippets/${snippet.id}/fork`, { shareToken: token })
       navigate(`/snippet/${res.data.id}`)
     } catch (err) {
       alert(err.response?.data?.error || 'Failed to fork snippet')

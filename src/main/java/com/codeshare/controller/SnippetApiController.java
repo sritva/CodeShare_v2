@@ -155,14 +155,8 @@ public class SnippetApiController {
     public ResponseEntity<?> getById(
             @PathVariable Integer id,
             @AuthenticationPrincipal UserDetails userDetails) {
-        Snippet snippet = snippetService.getById(id);
-        if (!snippet.isPublic()) {
-            User user = getCurrentUser(userDetails);
-            if (user == null || !snippet.getUser().getId().equals(user.getId())) {
-                return ResponseEntity.status(403).build();
-            }
-        }
         User current = getCurrentUser(userDetails);
+        Snippet snippet = snippetService.getReadableById(id, current);
         boolean liked = current != null && snippet.getLikedBy().stream()
                 .anyMatch(u -> u.getId().equals(current.getId()));
         boolean starred = current != null && snippet.getStarredBy().stream()
@@ -177,7 +171,8 @@ public class SnippetApiController {
         responseMap.put("username", snippet.getUsername());
         responseMap.put("createdAt", snippet.getCreatedAt());
         responseMap.put("updatedAt", snippet.getUpdatedAt());
-        responseMap.put("shareToken", snippet.getShareToken() != null ? snippet.getShareToken() : "");
+        boolean isOwner = com.codeshare.service.SnippetAccessPolicy.isOwner(snippet, current);
+        responseMap.put("shareToken", isOwner && snippet.getShareToken() != null ? snippet.getShareToken() : "");
         responseMap.put("shareEnabled", snippet.isShareEnabled());
         responseMap.put("aiExplanation", snippet.getAiExplanation() != null ? snippet.getAiExplanation() : "");
         responseMap.put("likesCount", snippet.getLikedBy().size());
@@ -255,12 +250,7 @@ public class SnippetApiController {
         User user = getCurrentUser(userDetails);
         if (user == null) return ResponseEntity.status(401).build();
 
-        Snippet snippet = snippetService.getById(id);
-
-        if (!snippet.isPublic() && 
-            !snippet.getUser().getId().equals(user.getId())) {
-            return ResponseEntity.status(403).build();
-        }
+        Snippet snippet = snippetService.getReadableById(id, user);
 
         if (snippet.getAiExplanation() != null && 
             !snippet.getAiExplanation().trim().isEmpty()) {
@@ -275,10 +265,14 @@ public class SnippetApiController {
         }
 
         try {
+            String sourceCode = snippet.getCode();
+            String sourceLanguage = snippet.getLanguage();
             String explanation = geminiClient.generateExplanation(
-                snippet.getCode(), snippet.getLanguage());
-            snippetService.updateExplanation(id, explanation);
+                sourceCode, sourceLanguage);
+            snippetService.updateExplanation(id, sourceCode, sourceLanguage, explanation);
             return ResponseEntity.ok(Map.of("explanation", explanation));
+        } catch (org.springframework.web.server.ResponseStatusException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Failed to generate AI explanation for snippet ID {}: {}", id, e.getMessage(), e);
             String message = (e.getMessage() != null && !e.getMessage().trim().isEmpty())
@@ -370,9 +364,11 @@ public class SnippetApiController {
     }
 
     @GetMapping("/{id}/comments")
-    public ResponseEntity<?> getComments(@PathVariable Integer id) {
-        Snippet snippet = snippetService.getById(id);
-        List<com.codeshare.model.Comment> comments = commentService.getCommentsForSnippet(snippet);
+    public ResponseEntity<?> getComments(@PathVariable Integer id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        User user = getCurrentUser(userDetails);
+        Snippet snippet = snippetService.getReadableById(id, user);
+        List<com.codeshare.model.Comment> comments = commentService.getCommentsForSnippet(snippet, user);
         List<?> commentPayloads = comments.stream().map(c -> Map.of(
             "id", c.getId(),
             "content", c.getContent(),
@@ -420,12 +416,14 @@ public class SnippetApiController {
     @PostMapping("/{id}/fork")
     public ResponseEntity<?> forkSnippet(
             @PathVariable Integer id,
+            @RequestBody(required = false) Map<String, String> request,
             @AuthenticationPrincipal UserDetails userDetails) {
         User user = getCurrentUser(userDetails);
         if (user == null) return ResponseEntity.status(401).build();
 
         try {
-            Snippet forked = snippetService.fork(id, user);
+            Snippet forked = snippetService.fork(id, user,
+                    request == null ? null : request.get("shareToken"));
             java.util.Map<String, Object> responseMap = new java.util.HashMap<>();
             responseMap.put("id", forked.getId());
             responseMap.put("title", forked.getTitle());

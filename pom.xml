@@ -137,7 +137,7 @@
                         <id>npm-install</id>
                         <goals><goal>npm</goal></goals>
                         <configuration>
-                            <arguments>install</arguments>
+                            <arguments>ci</arguments>
                         </configuration>
                     </execution>
                     <execution>
