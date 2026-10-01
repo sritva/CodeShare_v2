@@ -509,7 +509,7 @@ export default function ViewSnippet() {
             </h2>
           </div>
           <div className="flex items-center gap-3">
-            {isLoggedIn && (
+            {isLoggedIn && (isOwner || !explanation) && (
               <button
                 onClick={handleExplain}
                 disabled={explaining}
