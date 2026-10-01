@@ -218,6 +218,7 @@ public class SnippetService {
         }
 
         snippet.setShareEnabled(false);
+        snippet.setShareToken(null);
         log.info("Sharing disabled for snippet {} by user {}",
             id, requestingUser.getUsername());
         return snippetRepository.save(snippet);

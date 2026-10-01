@@ -74,11 +74,12 @@ public class GeminiClient {
         partObject.put("text", prompt);
 
         String jsonRequestBody = objectMapper.writeValueAsString(rootNode);
-        String url = "https://generativelanguage.googleapis.com/v1beta/models/" + targetModel + ":generateContent?key=" + resolvedKey;
+        String url = "https://generativelanguage.googleapis.com/v1beta/models/" + targetModel + ":generateContent";
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .header("Content-Type", "application/json")
+                .header("x-goog-api-key", resolvedKey)
                 .POST(HttpRequest.BodyPublishers.ofString(jsonRequestBody))
                 .timeout(Duration.ofSeconds(60))
                 .build();

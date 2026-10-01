@@ -246,13 +246,17 @@ public class SnippetApiController {
     @PostMapping("/{id}/explain")
     public ResponseEntity<?> explain(
             @PathVariable Integer id,
+            @RequestParam(defaultValue = "false") boolean regenerate,
             @AuthenticationPrincipal UserDetails userDetails) {
         User user = getCurrentUser(userDetails);
         if (user == null) return ResponseEntity.status(401).build();
 
         Snippet snippet = snippetService.getReadableById(id, user);
 
-        if (snippet.getAiExplanation() != null && 
+        boolean isOwner = com.codeshare.service.SnippetAccessPolicy.isOwner(snippet, user);
+        boolean shouldRegenerate = regenerate && isOwner;
+
+        if (!shouldRegenerate && snippet.getAiExplanation() != null && 
             !snippet.getAiExplanation().trim().isEmpty()) {
             return ResponseEntity.ok(
                 Map.of("explanation", snippet.getAiExplanation()));

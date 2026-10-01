@@ -112,7 +112,9 @@ export default function ViewSnippet() {
     setExplainError('')
     setShowAiExplanation(true)
     try {
-      const res = await api.post(`/snippets/${id}/explain`)
+      const isOwner = isLoggedIn && snippet?.username === username
+      const url = explanation && isOwner ? `/snippets/${id}/explain?regenerate=true` : `/snippets/${id}/explain`
+      const res = await api.post(url)
       setExplanation(res.data.explanation)
     } catch (err) {
       setExplainError(

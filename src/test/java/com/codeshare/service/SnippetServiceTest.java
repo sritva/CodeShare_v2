@@ -187,4 +187,18 @@ class SnippetServiceTest {
 
         verify(snippetRepository, never()).delete(any());
     }
+
+    @Test
+    void disableSharing_clearsShareToken() {
+        existingSnippet.setShareToken("old-token");
+        existingSnippet.setShareEnabled(true);
+        snippetService.disableSharing(10, owner);
+
+        assertNull(existingSnippet.getShareToken());
+        assertFalse(existingSnippet.isShareEnabled());
+
+        snippetService.enableSharing(10, owner);
+        assertNotNull(existingSnippet.getShareToken());
+        assertNotEquals("old-token", existingSnippet.getShareToken());
+    }
 }

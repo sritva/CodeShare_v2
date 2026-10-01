@@ -28,6 +28,9 @@ public class CommentService {
         if (content == null || content.trim().isEmpty()) {
             throw new IllegalArgumentException("Comment content cannot be empty");
         }
+        if (content.trim().length() > 1000) {
+            throw new IllegalArgumentException("Comment must be under 1000 characters");
+        }
         Comment comment = new Comment();
         comment.setSnippet(snippet);
         comment.setUser(user);

@@ -55,10 +55,22 @@ public class UserApiController {
         User currentUser = getCurrentUser(userDetails);
         if (currentUser == null) return ResponseEntity.status(401).build();
 
-        String bio = request.get("bio");
-        String avatarUrl = request.get("avatarUrl");
-        String githubUrl = request.get("githubUrl");
-        String linkedinUrl = request.get("linkedinUrl");
+        String bio = request.get("bio") != null && !request.get("bio").trim().isEmpty() ? request.get("bio").trim() : null;
+        if (bio != null && bio.length() > 1000) {
+            return ResponseEntity.badRequest().body(Map.of("error", "bio must be at most 1000 characters"));
+        }
+
+        String avatarUrl = request.get("avatarUrl") != null && !request.get("avatarUrl").trim().isEmpty() ? request.get("avatarUrl").trim() : null;
+        String githubUrl = request.get("githubUrl") != null && !request.get("githubUrl").trim().isEmpty() ? request.get("githubUrl").trim() : null;
+        String linkedinUrl = request.get("linkedinUrl") != null && !request.get("linkedinUrl").trim().isEmpty() ? request.get("linkedinUrl").trim() : null;
+
+        try {
+            validateUrl(avatarUrl, "avatarUrl");
+            validateUrl(githubUrl, "githubUrl");
+            validateUrl(linkedinUrl, "linkedinUrl");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
 
         currentUser.setBio(bio);
         currentUser.setAvatarUrl(avatarUrl);
@@ -75,5 +87,25 @@ public class UserApiController {
         response.put("linkedinUrl", currentUser.getLinkedinUrl());
 
         return ResponseEntity.ok(response);
+    }
+
+    private void validateUrl(String url, String fieldName) {
+        if (url == null) return;
+        if (url.length() > 255) {
+            throw new IllegalArgumentException(fieldName + " must be at most 255 characters");
+        }
+        try {
+            java.net.URI uri = new java.net.URI(url);
+            String scheme = uri.getScheme();
+            String host = uri.getHost();
+            if (scheme == null || (!scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https"))) {
+                throw new IllegalArgumentException(fieldName + " must use http or https scheme");
+            }
+            if (host == null || host.trim().isEmpty()) {
+                throw new IllegalArgumentException(fieldName + " must have a non-empty host");
+            }
+        } catch (java.net.URISyntaxException e) {
+            throw new IllegalArgumentException("Invalid " + fieldName + " format");
+        }
     }
 }

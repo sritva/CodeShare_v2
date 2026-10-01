@@ -56,7 +56,7 @@ export default function UserProfile() {
       }))
       setIsEditing(false)
     } catch (err) {
-      setSaveError('Failed to update profile')
+      setSaveError(err.response?.data?.error || 'Failed to update profile')
     } finally {
       setSaveLoading(false)
     }
